@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/intl-tel-input/17.0.8/js/intlTelInput.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/intl-tel-input/17.0.8/css/intlTelInput.min.css">
+    <script src="/login.js" defer></script>
+    <title>Signup - Serene Fields Wiki</title>
+    <style>
+        body {
+            margin: 0;
+            font-family: 'Arial', sans-serif;
+            background-color: #1e1e1e;
+            color: #f4f4f4;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+
+        .login-container {
+            background-color: #333;
+            padding: 40px;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+            width: 300px;
+        }
+
+        .login-container h2 {
+            text-align: center;
+            color: #ff6600;
+            margin-bottom: 20px;
+            font-size: 1.8em;
+        }
+
+        .login-container input[type="text"],
+        .login-container input[type="password"],
+        .login-container input[type="tel"] {
+            width: 100%;
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 5px;
+            border: none;
+            outline: none;
+            font-size: 1em;
+            background-color: #555;
+            color: #f4f4f4;
+        }
+
+        .login-container input[type="submit"] {
+            width: 100%;
+            padding: 10px;
+            margin-top: 20px;
+            border-radius: 5px;
+            border: none;
+            background-color: #ff6600;
+            color: #fff;
+            font-size: 1.1em;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+            text-align: center;
+        }
+
+        .login-container input[type="submit"]:hover {
+            background-color: #ff3300;
+        }
+
+        .login-container a {
+            display: block;
+            text-align: center;
+            color: #f4f4f4;
+            margin-top: 15px;
+            text-decoration: none;
+            font-size: 0.9em;
+        }
+
+        .login-container a:hover {
+            color: #ff6600;
+        }
+
+        .phone-label {
+            color: #f4f4f4;
+            font-size: 0.9em;
+            margin: 10px 0 5px 0;
+        }
+
+        .phone-container {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .phone-container input[type="tel"] {
+            flex: 1;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="login-container">
+        <h2>SF Wiki Signup</h2>
+        
+            <input type="text" name="username" id="user" placeholder="Username" required>
+            <input type="password" name="password" id="pass" placeholder="Password" required>
+            <input type="text" name="email" id="email" placeholder="Email" required>
+            <input type="text" name="backup-email" id="backup" placeholder="Backup Email" required>
+            <div class="phone-container" style="color: black;">
+                <select id="country" name="country"></select>
+                <input type="tel" id="phone" name="phone" placeholder="Phone Number" minlength="10" maxlength="10" required>
+            </div>
+            
+            <input type="submit" onclick="signup(document.getElementById('user').value,document.getElementById('pass').value,document.getElementById('email').value,document.getElementById('backup').value,document.getElementById('phone').value)" value="Create Account">
+        
+        <a href="login.html">I already have an account!</a>
+    </div>
+
+    <script>
+        const phoneInputField = document.querySelector("#phone");
+        const countrySelect = document.querySelector("#country");
+        const phoneInput = window.intlTelInput(phoneInputField, {
+            initialCountry: "auto",
+            geoIpLookup: function(callback) {
+                fetch('https://ipinfo.io/json', {
+                    headers: { 'Accept': 'application/json' }
+                }).then((resp) => resp.json())
+                  .then((resp) => callback(resp.country))
+                  .catch(() => callback("us"));
+            },
+            utilsScript: "https://cdnjs.cloudflare.com/ajax/libs/intl-tel-input/17.0.8/js/utils.js",
+            separateDialCode: true,
+        });
+
+        // Populate the country select box with available country options
+        for (let i = 0; i < phoneInput.getSelectedCountryData().iso2.length; i++) {
+            let countryOption = document.createElement("option");
+            countryOption.value = phoneInput.getSelectedCountryData().iso2;
+            countryOption.text = phoneInput.getSelectedCountryData().name;
+            countrySelect.appendChild(countryOption);
+        }
+
+        // Sync the select box with the intl-tel-input
+        countrySelect.addEventListener('change', function() {
+            phoneInput.setCountry(this.value);
+        });
+    </script>
+</body>
+
+</html>

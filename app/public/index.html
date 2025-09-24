@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Serene Fields Wiki</title>
+    <link rel="stylesheet" href="/main.css">
+</head>
+
+<body>
+
+    <nav style="background-image: url('https://serenefields.com/_astro/img3.BCRswBby.webp')">
+        <ul>
+            <li><a href="">Home</a></li>
+            <li><a href="/trending.html">Trending</a></li>
+            <li><a href="/create.html">Create</a></li>
+        </ul>
+        <div class="search-container">
+            <input type="text" placeholder="Search...">
+            <button class="login-button" onclick="login()" id="acc">Login</button>
+        </div>
+    </nav>
+
+    <div class="container">
+        <div class="sidebar">
+            <a href="#overview">Overview</a>
+            <a href="#characters">Trending</a>
+            <a href="#mechanics">Create</a>
+            <a href="/about.html">About</a>
+        </div>
+
+        <main>
+            <header>
+                <div class="logo">
+                    <h1>Serene Fields Wiki</h1>
+                </div>
+            </header>
+
+            <section id="overview">
+                <h2>Overview</h2>
+              <p> <strong>Welcome to the official Serene Fields Wiki! </strong> This is a wiki built to be community maintained coming with all kinds of features allowing developers, creators, and players to create their own articles and contribute to the wiki. Our goal is for this Wiki is for it to be the easiest way to get quick info about specifics inside of Serene Fields and anything that might be confusing as well as create a community platform where people can discuss topics related to the game.</p>
+                <div class="image-container">
+                    <img src="https://serenefields.com/_astro/img1.Bm2Fowa_.webp" alt="Game Image">
+                </div>
+            </section>
+
+            <section id="characters">
+                <h2>Available Ranks</h2>
+                <div class="card-grid">
+                    <div class="character-card">
+                        <img src="https://serenefields.com/_astro/rank_lord.BZmgo4UU.webp" alt="Lord">
+                        <h3>Lord</h3>
+                        <p>Receive the Lord Rank on the Server and the SereneFields Discord.</p>
+                    </div>
+                    <div class="character-card">
+                        <img src="https://serenefields.com/_astro/rank_baron.RJDomLJi.webp" alt="Baron">
+                        <h3>Baron</h3>
+                        <p>Receive the Baron Rank on the Server and the SereneFields Discord.</p>
+                    </div>
+                    <div class="character-card">
+                        <img src="https://serenefields.com/_astro/rank_duke.CGkWcH-2.webp" alt="Duke">
+                        <h3>Duke</h3>
+                        <p>Receive the Duke Rank on the Server and the SereneFields Discord.</p>
+                    </div>
+                    <div class="character-card">
+                        <img src="https://serenefields.com/_astro/rank_land_grant.84Jws-uc.webp" alt="Land Grant">
+                        <h3>Land Grant - FULL ACCESS!</h3>
+                        <p>This subscription allows any player, regardless of rank, to freely build on their farm plot.</p>
+                    </div>
+                </div>
+            </section>
+
+            <section id="mechanics">
+                <h2>Using the Serene Fields Wiki</h2>
+                <p>Learn about the game mechanics, strategies, and tips. Hit the search bar at the top and search for any questions you may have. You may also contribute to our wiki by creating your own posts!</p>
+            </section>
+        </main>
+
+        <div class="sidebar" style="width: 250px; background-color: #1e1e1e; height: 100%;">
+            <div class="link-box">
+                <h3>Start farming!</h3>
+                <a href="https://discord.gg/dAVNbZmkjz">Official Discord</a>
+                <a href="minecraft://play.serenefields.com">Server IP: play.serenefields.com</a>
+            </div>
+            <div class="ad-box">
+                <p>Your ad or promotional content here.</p>
+            </div>
+        </div>
+    </div>
+
+    <footer style="">
+        <p>&copy; 2024 Serene Fields Wiki. All rights reserved.</p>
+    </footer>
+
+    <script>
+        function login() {
+            if (getCookie("account") == "") {
+                window.location = '/login.html'
+            }
+            else {
+                window.location = '/logout.html'              
+            }
+        }
+
+        if (getCookie("account") == "") {
+            document.getElementById("acc").innerHTML = "Login";
+        } else {
+            document.getElementById("acc").innerHTML = "Log Out";
+        }
+
+        function getCookie(cname) {
+            let name = cname + "=";
+            let decodedCookie = decodeURIComponent(document.cookie);
+            let ca = decodedCookie.split(';');
+            for (let i = 0; i < ca.length; i++) {
+                let c = ca[i];
+                while (c.charAt(0) == ' ') {
+                    c = c.substring(1);
+                }
+                if (c.indexOf(name) == 0) {
+                    return c.substring(name.length, c.length);
+                }
+            }
+            return "";
+        }
+    </script>
+</body>
+
+</html>

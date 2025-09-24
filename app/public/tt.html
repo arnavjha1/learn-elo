@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <script src="https://apis.google.com/js/platform.js"   
+ async defer></script>   
+
+  <script src="/login.js" defer></script>
+  <title>Login - Serene Fields Wiki</title>
+</head>
+
+<body>
+  <div class="login-container">
+    <h2>SF Wiki Login</h2>
+
+    <div id="g-signin2" data-onsuccess="onSignIn" data-width="300" data-height="50"></div>
+
+    <a href="test.html" onclick="alert('PRO TIP: Maybe next time, choose a better password...')">Forgot your password?</a><br>
+    <a href="signup.html">I don't have an account!</a>
+  </div>
+
+  <script>
+    function onSignIn(googleUser) {
+      // Handle successful Google Sign-In
+      var profile = googleUser.getBasicProfile();
+      console.log('ID: ' + profile.getId());
+      console.log('Name: ' + profile.getName());
+      console.log('Image URL: ' + profile.getImageUrl());   
+
+      // Implement your logic to handle the Google user data
+    }
+  </script>
+</body>
+
+</html>

@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Two Column Layout</title>
+    <style>
+        body {
+            margin: 0;
+            font-family: 'Arial', sans-serif;
+            background-color: #f4f4f4;
+            color: #333;
+        }
+
+        .container {
+            display: flex;
+            min-height: 100vh;
+        }
+
+        .sidebar {
+            background-color: #333;
+            color: #fff;
+            padding: 20px;
+            width: 250px;
+        }
+
+        .sidebar ul {
+            list-style-type: none;
+            padding: 0;
+        }
+
+        .sidebar ul li {
+            margin-bottom: 10px;
+        }
+
+        .sidebar ul li a {
+            color: #ff6600;
+            text-decoration: none;
+            font-weight: bold;
+        }
+
+        .sidebar ul li a:hover {
+            color: #ffa04c;
+        }
+
+        .content {
+            flex: 1;
+            padding: 20px;
+            background-color: #fff;
+        }
+
+        h2 {
+            border-bottom: 2px solid #ff6600;
+            padding-bottom: 10px;
+            margin-bottom: 20px;
+        }
+
+        p {
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="container">
+        <div class="sidebar">
+            <h2>Sidebar</h2>
+            <ul>
+                <li><a href="#">Link 1</a></li>
+                <li><a href="#">Link 2</a></li>
+                <li><a href="#">Link 3</a></li>
+                <li><a href="#">Link 4</a></li>
+            </ul>
+        </div>
+
+        <div class="content">
+            <h2>Main Content</h2>
+            <p>
+                Lorem ipsum dolor sit amet, consectetur adipiscing elit. Morbi feugiat, nisl nec sollicitudin auctor, sapien justo venenatis erat, nec vestibulum nisi libero non sapien. Nulla facilisi. Quisque luctus risus sit amet purus interdum, ut convallis orci bibendum.
+            </p>
+            <p>
+                Fusce viverra, velit et vulputate scelerisque, nisi urna cursus sapien, at gravida ex felis in felis. Vestibulum vehicula, leo ac fermentum cursus, odio metus tempus urna, at fermentum turpis nulla et erat.
+            </p>
+        </div>
+    </div>
+
+</body>
+
+</html>

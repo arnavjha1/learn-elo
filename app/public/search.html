@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Article Grid</title>
+    <link rel="stylesheet" href="/main.css">
+    <style>
+        body {
+            margin: 0;
+            font-family: 'Arial', sans-serif;
+            background-color: #1e1e1e;
+            color: #f4f4f4;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        h1 {
+            margin-top: 20px;
+            color: #ff6600;
+        }
+
+        .article-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 10px;
+            padding: 20px;
+            max-width: 1200px;
+            width: 100%;
+        }
+
+        .article-box {
+            width: 350px;
+            height: 350px;
+            background-color: #333;
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            transition: transform 0.3s ease;
+        }
+
+        .article-box:hover {
+            transform: scale(1.05);
+        }
+
+        .article-box h2 {
+            margin: 0;
+            color: #ff6600;
+        }
+
+        .article-box p {
+            color: #f4f4f4;
+            margin-bottom: 20px;
+        }
+
+        .article-box a {
+            text-decoration: none;
+            color: #ff6600;
+            font-weight: bold;
+            align-self: flex-end;
+        }
+
+        .article-box a:hover {
+            color: #fff;
+        }
+    </style>
+</head>
+
+<body>
+    <nav style="background-image: url('https://serenefields.com/_astro/img3.BCRswBby.webp')">
+        <ul>
+            <li><a href="">Home</a></li>
+            <li><a href="/trending.html">Trending</a></li>
+            <li><a href="/create.html">Create</a></li>
+        </ul>
+        <div class="search-container">
+            <input type="text" placeholder="Search...">
+            <button class="login-button" onclick="login()" id="acc">Login</button>
+        </div>
+    </nav>
+    <h1>Article Grid</h1>
+    <div id="articleGrid" class="article-grid">
+        <!-- Article boxes will be dynamically added here -->
+    </div>
+     <script type="importmap">
+      {
+        "imports": {
+          "@google/generative-ai": "https://esm.run/@google/generative-ai"
+        }
+      }
+    </script>
+    <script type="module">
+      const name = document.cookie;
+      const user = name.split("=")[1];
+      let allData = [];
+      const dreams = [];
+
+      function getTime() {
+        const d = new Date();
+        let time = Date.UTC(
+          d.getUTCFullYear(),
+          d.getUTCMonth(),
+          d.getUTCDay(),
+          d.getUTCHours(),
+          d.getUTCMinutes()
+        );
+        return time;
+      }
+
+      fetch("/getDreams", {})
+        .then((res) => res.json())
+        .then((response) => {
+          response.forEach((row) => {
+            allData.push(row.dream);
+          });
+        });
+      function valid(x) {
+        return !(x == "" || x == " " || x.split(" ") != x);
+      }
+      function sqlAddItem(x) {
+        const data = { dream: x };
+
+        fetch("/addDream", {
+          method: "POST",
+          body: JSON.stringify(data),
+          headers: { "Content-Type": "application/json" },
+        })
+          .then((res) => res.json())
+          .then((response) => {
+            console.log(JSON.stringify(response));
+          });
+        dreams.push(x);
+        allData.push(x);
+        // alert(allData);
+      }
+      function sqlRead(type, item, columns) {
+        let results = [];
+        for (let i = 0; i < allData.length; i++) {
+          let k = allData[i].split(" ::: ");
+          let col = [];
+          let itemValid = false;
+          if (k[0] == type && (k[1] == item || item == true)) {
+            if (item == true) {
+              for (let i = 1; i <= columns + 1; i++) {
+                col.push(k[i]);
+                itemValid = true;
+              }
+            } else {
+              for (let i = 2; i <= columns + 1; i++) {
+                col.push(k[i]);
+                itemValid = true;
+              }
+            }
+          }
+          if (itemValid) {
+            results.push(col);
+          }
+        }
+        return results;
+      }
+      var allPosts = [];
+      setTimeout(function f(){
+        allPosts = sqlRead("post", true, 5);
+        var keywords = decodeURIComponent(window.location.href);
+        keywords = keywords.split("#")[1];
+        var words = keywords.split(" ");
+        words.push("test");
+        fullSearch(allPosts, words, keywords);
+      }, 4000)
+      
+      function snip(item, char){
+        let rawPreview = item;
+        rawPreview = rawPreview.split(char);
+        let semirawPreview = "";
+        for (let i = 0; i < rawPreview.length; i++) {
+          semirawPreview += rawPreview[i];
+        }
+        return semirawPreview;
+      }
+      
+      function snipAllSuffixes(item, char){
+        let rawPreview = item;
+        for(let i=0; i<char.length; i++){
+          rawPreview = rawPreview.split(char[i]);
+          if(rawPreview[rawPreview.length-1] == ""){
+            let semirawPreview = "";
+            semirawPreview += rawPreview[0];
+            for (let i = 1; i < rawPreview.length; i++) {
+              semirawPreview += char[i];
+              semirawPreview += rawPreview[i];
+            }
+            rawPreview = semirawPreview;  
+          }
+          else{
+            rawPreview = item;
+          }
+        }
+        return rawPreview;
+      }
+      
+      function check(item, has){
+        return (item.split(has).length-1)
+      }
+      
+      function fullSearch(allPost, keywords, full){
+        let disallowed = ['&lt;','&gt;',"/","h1","h2","\"","href","src","p","the","a","an","?","!",".",";",":"];
+        let rawrank = allPost;
+        let absoluterank = [];
+        let rank = [];
+        for(let i=0; i<rawrank.length; i++){
+          let score = 0;
+          score += check(allPost[i], full)*10
+          for(let j=0; j<keywords.length-1; j++){
+            if(disallowed.indexOf(keywords[j]) == -1){
+              score += check(allPost[i], keywords[j])*2
+            }
+          }
+          absoluterank.push(score);
+        }
+        for(let i=0; i<rawrank.length; i++){
+          rank.push([absoluterank[i], rawrank[i]])
+        }
+        /*rank.sort(function(a, b){return b-a});*/
+        rank.sort(function(a, b){return b[0]-a[0]});
+      }
+      
+      let rank = [[1,"Yo"],[6,"Oh"],[4,"Man"],[7,"Dubai"],[10,"Saint"],[2,"Best"]];
+      rank.sort(function(a, b){return b[0]-a[0]});
+      alert(rank);
+      
+      function getCookie(cname) {
+        let name = cname + "=";
+        let decodedCookie = decodeURIComponent(document.cookie);
+        let ca = decodedCookie.split(";");
+        for (let i = 0; i < ca.length; i++) {
+          let c = ca[i];
+          while (c.charAt(0) == " ") {
+            c = c.substring(1);
+          }
+          if (c.indexOf(name) == 0) {
+            return c.substring(name.length, c.length);
+          }
+        }
+        return "";
+      }
+      
+      function addArticles(articles) {
+            const grid = document.getElementById('articleGrid');
+            grid.innerHTML = ''; // Clear existing content
+
+            articles.forEach(article => {
+                const articleBox = document.createElement('div');
+                articleBox.className = 'article-box';
+
+                const articleTitle = document.createElement('h2');
+                articleTitle.textContent = article.title;
+
+                const articleContent = document.createElement('p');
+                articleContent.textContent = article.content;
+
+                const articleLink = document.createElement('a');
+                articleLink.href = article.link;
+                articleLink.textContent = 'Read More';
+
+                articleBox.appendChild(articleTitle);
+                articleBox.appendChild(articleContent);
+                articleBox.appendChild(articleLink);
+
+                grid.appendChild(articleBox);
+            });
+        }
+
+        // Example usage:
+        function add(text){
+          addArticles([
+              { title: 'Article 1', content: 'This is the summary of article 1.', link: '#' },
+              { title: 'Article 2', content: 'This is the summary of article 2.', link: '#' },
+              { title: 'Article 3', content: 'This is the summary of article 3.', link: '#' },
+              { title: 'Article 4', content: 'This is the summary of article 4.', link: '#' },
+              { title: 'Article 5', content: 'This is the summary of article 5.', link: '#' }
+          ]);
+        }
+    </script>
+
+</body>
+
+</html>
