@@ -151,11 +151,11 @@
             <button class="ap-btn" href="/ap_calc_bc">AP Calculus BC</button>
             <button class="ap-btn" href="/ap_physics_1">AP Physics 1</button>
             <button class="ap-btn" href="/ap_physics_c_mech">AP Physics C: Mechanics</button>-->
-            <a class="ap-btn" href="/ap_physics_c_e_m">AP Physics C: E&M</a>
+            <button class="ap-btn" onclick="redirectTo('/class/ap_physics_c_e_m')">AP Physics C: E&M</button>
             <!--<button class="ap-btn">AP Chemistry</button>
             <button class="ap-btn">AP Biology</button>
             <button class="ap-btn">AP Computer Science A</button>-->
-            <a class="ap-btn" href="/ap_csp">AP Computer Science Principles</a>
+            <button class="ap-btn" onclick="redirectTo('/class/ap_csp')">AP Computer Science Principles</button>>
             <!--<button class="ap-btn">AP US History</button>
             <button class="ap-btn">AP World History</button>
             <button class="ap-btn">AP Government</button>
@@ -189,6 +189,9 @@
       toggle.addEventListener("change", function () {
         document.body.classList.toggle("dark-mode");
       });
+      function redirectTo(page) {
+        window.location.href = page;
+      }
     </script>
   </body>
 </html>
