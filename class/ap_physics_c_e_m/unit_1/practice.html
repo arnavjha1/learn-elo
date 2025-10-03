@@ -1,0 +1,1112 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Dynamic Progress Bar</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap"
+      rel="stylesheet"
+    />
+    <!-- Include Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <style>
+      /* Global Styles */
+      body {
+        margin: 0;
+        padding: 0;
+        font-family: "Roboto", sans-serif;
+        background: linear-gradient(135deg, #83a4d4, #b6fbff);
+        color: #333;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        min-height: 100vh;
+      }
+      .container {
+        overflow-y: scroll;
+        position: fixed;
+        top: 20px;
+        bottom: 20px;
+        background: #fff;
+        max-width: 800px;
+        width: 90%;
+        padding: 30px;
+        border-radius: 15px;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+      }
+      /* Chart Styles */
+      #eloChart {
+        margin-bottom: 20px;
+      }
+      /* Progress Bar Styles */
+      .progress-container {
+        width: 100%;
+        background-color: #e0e0e0;
+        border-radius: 25px;
+        overflow: hidden;
+        margin-bottom: 20px;
+      }
+      .progress-bar {
+        width: 0;
+        height: 30px;
+        text-align: center;
+        line-height: 30px;
+        color: white;
+        transition: width 1s ease;
+      }
+      #progressBar {
+        background-color: #ff2c00;
+        transition: width 1s ease, background-color 1.5s ease;
+      }
+      /* Content Styles */
+      h1 {
+        font-size: 2em;
+        margin-bottom: 10px;
+        text-align: center;
+      }
+      h2 {
+        text-align: center;
+      }
+      h4 {
+        font-weight: 500;
+      }
+      .question,
+      .option,
+      .solution {
+        margin-bottom: 15px;
+      }
+      .option input[type="radio"] {
+        margin-right: 10px;
+      }
+      button {
+        background-color: #4caf50;
+        color: #fff;
+        border: none;
+        padding: 10px 20px;
+        font-size: 1em;
+        border-radius: 5px;
+        cursor: pointer;
+        margin-right: 10px;
+        transition: background-color 0.3s ease;
+      }
+      button:hover {
+        background-color: #43a047;
+      }
+      /* Visibility Settings */
+      #problemOptions {
+        display: block;
+      }
+      #solutionOptions {
+        display: none;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <!-- Progress Bar -->
+      <div class="progress-container" id="pro">
+        <div class="progress-bar" id="progressBar">0%</div>
+      </div>
+      <h1>Unit 1 Practice</h1>
+      <div class="question">
+        <h4>
+          <span id="problem">Issue loading question (check console)</span>
+        </h4>
+      </div>
+      <div class="option">
+        <input type="radio" name="gender" id="option0" /><span id="o1"></span
+        ><br />
+        <input type="radio" name="gender" id="option1" /><span id="o2"></span
+        ><br />
+        <input type="radio" name="gender" id="option2" /><span id="o3"></span
+        ><br />
+        <input type="radio" name="gender" id="option3" /><span id="o4"></span
+        ><br />
+        <input type="radio" name="gender" id="option4" /><span id="o5"></span
+        ><br />
+      </div>
+      <div id="problemOptions">
+        <button onclick="gradeProblem(true)">Submit</button>
+        <button onclick="gradeProblem(false)">See Solution</button>
+      </div>
+      <div id="solutionOptions">
+        <strong><span id="cor">Wrong!</span> This is the solution:</strong
+        ><br />
+        <span id="solution"></span><br /><br />
+        <button onclick="loadNewQuestion()">Continue</button>
+      </div>
+      <!-- Elo Progression Chart -->
+      <canvas id="eloChart" width="800" height="200"></canvas>
+      <h4>Stats</h4>
+      <ul>
+        <li>Questions Solved: <c id="qs">0</c></li>
+        <li>Problem Rating: <c id="cr">500</c></li>
+        <li>Accuracy: <c id="acc">N/A</c></li>
+        <li>Actual Rating: <c id="ar">500</c></li>
+      </ul>
+    </div>
+  <script>
+    const ratingJump = 1;
+    const questions = [
+  // Q1 (Vectors – Calculation)
+  [
+    "Calculate the magnitude of vector A = (3, -4).",
+    "Magnitude = √(3² + (-4)²) = √(9 + 16) = √25 = 5.",
+    "3",
+    "4",
+    "5", //correct answer here
+    "6",
+    "7",
+    5
+  ],
+  // Q2 (Vectors – Calculation)
+  [
+    "Find the magnitude of the vector 4B, where B = (2, -3).",
+    "4B = (8, -12) and its magnitude is √(8² + (-12)²) = √(64 + 144) = √208 ≈ 14.42.",
+    "10",
+    "12",
+    "14.42", //correct answer here
+    "16",
+    "18",
+    5
+  ],
+  // Q3 (Vectors – Calculation)
+  [
+    "Given A = (1, 2) and B = (-2, 3), compute the dot product A·B.",
+    "A·B = (1)(-2) + (2)(3) = -2 + 6 = 4.",
+    "2",
+    "4", //correct answer here
+    "6",
+    "8",
+    "10",
+    4
+  ],
+  // Q4 (Vectors – Calculation)
+  [
+    "Calculate the magnitude of the cross product of A = (3, 0, 0) and B = (0, 4, 0).",
+    "A × B = (0, 0, 3×4) = (0, 0, 12), so the magnitude is 12.",
+    "8",
+    "10",
+    "12", //correct answer here
+    "14",
+    "16",
+    5
+  ],
+  // Q5 (Vectors – Calculation)
+  [
+    "Convert the polar coordinate (r = 5, θ = 53.13°) to Cartesian coordinates. (Use cos 53.13° ≈ 0.6, sin 53.13° ≈ 0.8)",
+    "x = 5×0.6 = 3 and y = 5×0.8 = 4, so the coordinate is (3, 4).",
+    "(3, 4)", //correct answer here
+    "(4, 3)",
+    "(5, 0)",
+    "(0, 5)",
+    "(-3, 4)",
+    3
+  ],
+  // Q6 (Vectors – Calculation)
+  [
+    "For vector C = (7, -24), determine the unit vector in the direction of C.",
+    "Magnitude = √(7² + (-24)²) = √(49+576)=√625=25; thus, unit vector = (7/25, -24/25) ≈ (0.28, -0.96).",
+    "(0.28, -0.96)", //correct answer here
+    "(0.30, -0.95)",
+    "(0.25, -0.97)",
+    "(0.35, -0.90)",
+    "(0.40, -0.85)",
+    3
+  ],
+  // Q7 (Unit Analysis)
+  [
+    "What are the SI units for the electric field E defined as F/q?",
+    "Force is in newtons (N) and charge in coulombs (C), so E has units of N/C (or V/m).",
+    "N/C", //correct answer here
+    "J/C",
+    "V",
+    "C/N",
+    "W/m²",
+    3
+  ],
+  // Q8 (Unit Analysis)
+  [
+    "Determine the SI units for electric potential V given by V = U/q.",
+    "With U in joules (J) and q in coulombs (C), V is in J/C, which are volts.",
+    "Volts",
+    "Coulombs",
+    "J/C", //correct answer here
+    "Newtons",
+    "Watts",
+    5
+  ],
+  // Q9 (Unit Analysis)
+  [
+    "Using unit analysis, what are the SI units of Coulomb’s constant k if V = kQ/r?",
+    "Rearranging gives k = V·r/Q; with V in V, r in m, Q in C, k has units V·m/C, equivalent to N·m²/C².",
+    "N·m/C",
+    "N·m²/C²", //correct answer here
+    "J·m/C²",
+    "W/m²",
+    "V/m",
+    4
+  ],
+  // Q10 (Unit Analysis)
+  [
+    "If electric potential energy U is defined by U = qV, what are its SI units?",
+    "Since q is in coulombs and V in volts, U is in joules (J).",
+    "Volts",
+    "Coulombs",
+    "Joules", //correct answer here
+    "Newtons",
+    "Watts",
+    5
+  ],
+  // Q11 (Coulomb's Law – Calculation)
+  [
+    "Calculate the force between Q₁ = 2×10⁻⁶ C and Q₂ = 3×10⁻⁶ C separated by 0.05 m. (k = 9×10⁹ N·m²/C²)",
+    "F = k|Q₁Q₂|/r² = 9×10⁹×(2×10⁻⁶×3×10⁻⁶)/(0.05²) = 9×10⁹×6×10⁻¹²/0.0025 = 21.6 N.",
+    "10.8 N",
+    "16.2 N",
+    "21.6 N", //correct answer here
+    "27.0 N",
+    "32.4 N",
+    5
+  ],
+  // Q12 (Coulomb's Law – Calculation)
+  [
+    "Calculate the repulsive force between two charges Q₁ = Q₂ = 5×10⁻⁶ C separated by 0.1 m. (k = 9×10⁹)",
+    "F = 9×10⁹×(5×10⁻⁶×5×10⁻⁶)/(0.1²) = 9×10⁹×25×10⁻¹²/0.01 = 22.5 N.",
+    "11.25 N",
+    "18.0 N",
+    "22.5 N", //correct answer here
+    "27.0 N",
+    "31.5 N",
+    5
+  ],
+  // Q13 (Coulomb's Law – Calculation)
+  [
+    "Find the force between a 4×10⁻⁶ C charge and a 2×10⁻⁶ C charge separated by 0.2 m. (k = 9×10⁹)",
+    "F = 9×10⁹×(4×10⁻⁶×2×10⁻⁶)/(0.2²) = 9×10⁹×8×10⁻¹²/0.04 = 1.8 N.",
+    "0.9 N",
+    "1.2 N",
+    "1.8 N", //correct answer here
+    "2.4 N",
+    "3.0 N",
+    5
+  ],
+  // Q14 (Coulomb's Law – Calculation)
+  [
+    "Two charges, Q₁ = 3×10⁻⁶ C and Q₂ = -3×10⁻⁶ C, are 0.1 m apart. Calculate the magnitude of the force between them. (k = 9×10⁹)",
+    "F = 9×10⁹×(|3×10⁻⁶×-3×10⁻⁶|)/(0.1²) = 9×10⁹×9×10⁻¹²/0.01 = 8.1 N.",
+    "4.05 N",
+    "6.0 N",
+    "8.1 N", //correct answer here
+    "10.8 N",
+    "12.15 N",
+    5
+  ],
+  // Q15 (Coulomb's Law – Calculation)
+  [
+    "A 6×10⁻⁶ C charge produces a potential of 540 V at a point. Determine the distance from the charge. (k = 9×10⁹)",
+    "Using V = kQ/r ⟹ r = kQ/V = (9×10⁹×6×10⁻⁶)/540 = 100 m.",
+    "50 m",
+    "75 m",
+    "100 m", //correct answer here
+    "125 m",
+    "150 m",
+    5
+  ],
+  // Q16 (Electric Fields – Calculation)
+  [
+    "Calculate the electric field at a distance of 0.15 m from a 4×10⁻⁶ C charge. (k = 9×10⁹)",
+    "E = kQ/r² = (9×10⁹×4×10⁻⁶)/(0.15²) = (36×10³)/(0.0225) ≈ 1.6×10⁶ N/C.",
+    "1.2×10⁶ N/C",
+    "1.4×10⁶ N/C",
+    "1.6×10⁶ N/C", //correct answer here
+    "1.8×10⁶ N/C",
+    "2.0×10⁶ N/C",
+    5
+  ],
+  // Q17 (Electric Fields – Calculation)
+  [
+    "A uniform electric field of 500 N/C is directed upward. What is the force on a 2×10⁻⁶ C charge placed in this field?",
+    "F = qE = 2×10⁻⁶×500 = 0.001 N.",
+    "0.0005 N",
+    "0.001 N", //correct answer here
+    "0.002 N",
+    "0.005 N",
+    "0.01 N",
+    4
+  ],
+  // Q18 (Electric Fields – Calculation)
+  [
+    "Calculate the potential difference between two points separated by 0.05 m in a uniform electric field of 800 N/C.",
+    "ΔV = E×d = 800×0.05 = 40 V.",
+    "20 V",
+    "30 V",
+    "40 V", //correct answer here
+    "50 V",
+    "60 V",
+    5
+  ],
+  // Q19 (Electric Fields – Calculation)
+  [
+    "Determine the electric field strength if a 3×10⁻⁶ C charge experiences a force of 0.27 N.",
+    "E = F/q = 0.27/(3×10⁻⁶) = 9.0×10⁴ N/C.",
+    "7.0×10⁴ N/C",
+    "8.0×10⁴ N/C",
+    "9.0×10⁴ N/C", //correct answer here
+    "1.0×10⁵ N/C",
+    "1.1×10⁵ N/C",
+    5
+  ],
+  // Q20 (Electric Fields – Calculation)
+  [
+    "A proton is in a uniform electric field of 1×10⁵ N/C. Calculate the force acting on it. (q = 1.6×10⁻¹⁹ C)",
+    "F = qE = 1.6×10⁻¹⁹×1×10⁵ = 1.6×10⁻¹⁴ N.",
+    "1.0×10⁻¹⁴ N",
+    "1.6×10⁻¹⁴ N", //correct answer here
+    "2.0×10⁻¹⁴ N",
+    "2.4×10⁻¹⁴ N",
+    "3.2×10⁻¹⁴ N",
+    4
+  ],
+  // Q21 (Electric Potential – Calculation)
+  [
+    "Calculate the electric potential at a distance of 0.2 m from a 2×10⁻⁶ C charge. (k = 9×10⁹)",
+    "V = kQ/r = (9×10⁹×2×10⁻⁶)/0.2 = 90,000 V.",
+    "45,000 V",
+    "70,000 V",
+    "90,000 V", //correct answer here
+    "110,000 V",
+    "130,000 V",
+    5
+  ],
+  // Q22 (Electric Potential – Calculation)
+  [
+    "A 4×10⁻⁶ C charge produces a potential of 360 V at a point. Find the distance from the charge. (k = 9×10⁹)",
+    "r = kQ/V = (9×10⁹×4×10⁻⁶)/360 = 100 m.",
+    "50 m",
+    "75 m",
+    "100 m", //correct answer here
+    "125 m",
+    "150 m",
+    5
+  ],
+  // Q23 (Electric Potential – Calculation)
+  [
+    "Find the potential energy of a 1×10⁻⁶ C charge in a 500 V potential.",
+    "U = qV = 1×10⁻⁶×500 = 5×10⁻⁴ J.",
+    "2.5×10⁻⁴ J",
+    "5×10⁻⁴ J", //correct answer here
+    "7.5×10⁻⁴ J",
+    "1×10⁻³ J",
+    "1.5×10⁻³ J",
+    4
+  ],
+  // Q24 (Electric Potential – Calculation)
+  [
+    "Calculate the work done to move a 2×10⁻⁶ C charge through a potential difference of 80 V.",
+    "W = qΔV = 2×10⁻⁶×80 = 1.6×10⁻⁴ J.",
+    "1.2×10⁻⁴ J",
+    "1.4×10⁻⁴ J",
+    "1.6×10⁻⁴ J", //correct answer here
+    "1.8×10⁻⁴ J",
+    "2.0×10⁻⁴ J",
+    5
+  ],
+  // Q25 (Electric Potential – Calculation)
+  [
+    "A point charge creates a potential of 250 V at a point. What is the magnitude of the electric field if the separation between the points is 0.1 m?",
+    "E = ΔV/d = 250/0.1 = 2500 V/m.",
+    "1500 V/m",
+    "2000 V/m",
+    "2500 V/m", //correct answer here
+    "3000 V/m",
+    "3500 V/m",
+    5
+  ],
+  // Q26 (AP-level Mixed – Modified)
+  [
+    "A proton is accelerated through a potential difference of 1000 V. Calculate the change in its electric potential energy. (e = 1.6×10⁻¹⁹ C)",
+    "ΔU = e×V = 1.6×10⁻¹⁹×1000 = 1.6×10⁻¹⁶ J.",
+    "1.0×10⁻¹⁶ J",
+    "1.6×10⁻¹⁶ J", //correct answer here
+    "2.0×10⁻¹⁶ J",
+    "2.4×10⁻¹⁶ J",
+    "3.2×10⁻¹⁶ J",
+    4
+  ],
+  // Q27 (AP-level Mixed)
+  [
+    "Calculate the work done in moving a 2×10⁻⁶ C charge from a point at 300 V to a point at 100 V.",
+    "W = q(V_final - V_initial) = 2×10⁻⁶×(100 - 300) = -4×10⁻⁴ J.",
+    "-2×10⁻⁴ J",
+    "-4×10⁻⁴ J", //correct answer here
+    "-6×10⁻⁴ J",
+    "-8×10⁻⁴ J",
+    "-1×10⁻³ J",
+    4
+  ],
+  // Q28 (AP-level Mixed)
+  [
+    "Two point charges, 3×10⁻⁶ C and 4×10⁻⁶ C, are fixed 0.1 m apart. Calculate the electric potential energy of the system. (k = 9×10⁹)",
+    "U = k(Q₁Q₂)/r = 9×10⁹×(3×10⁻⁶×4×10⁻⁶)/0.1 = 1.08 J.",
+    "0.54 J",
+    "0.81 J",
+    "1.08 J", //correct answer here
+    "1.35 J",
+    "1.62 J",
+    5
+  ],
+  // Q29 (AP-level Mixed)
+  [
+    "A 5×10⁻⁶ C charge is concentrated at a point. Calculate the electric field at 0.25 m from the charge. (k = 9×10⁹)",
+    "E = kQ/r² = 9×10⁹×5×10⁻⁶/(0.25²) = 7.2×10⁵ N/C.",
+    "5.4×10⁵ N/C",
+    "6.0×10⁵ N/C",
+    "7.2×10⁵ N/C", //correct answer here
+    "8.0×10⁵ N/C",
+    "9.0×10⁵ N/C",
+    5
+  ],
+  // Q30 (AP-level Mixed)
+  [
+    "Calculate the potential at a point 0.3 m from a 1×10⁻⁵ C charge. (k = 9×10⁹)",
+    "V = kQ/r = (9×10⁹×1×10⁻⁵)/0.3 = 300,000 V.",
+    "200,000 V",
+    "250,000 V",
+    "300,000 V", //correct answer here
+    "350,000 V",
+    "400,000 V",
+    5
+  ],
+  // Q31 (AP-level Mixed)
+  [
+    "A dipole consists of charges +2×10⁻⁶ C and -2×10⁻⁶ C separated by 0.05 m. Calculate the magnitude of the electric field along the axial line at a distance of 0.2 m from the center. (Use E = (1/(4πε₀))·(2p)/(r³) with 1/(4πε₀)=9×10⁹)",
+    "p = 2×10⁻⁶×0.05 = 1×10⁻⁷ C·m; then E = 9×10⁹×(2×1×10⁻⁷)/(0.2³) = 2.25×10⁵ N/C.",
+    "1.8×10⁵ N/C",
+    "2.0×10⁵ N/C",
+    "2.25×10⁵ N/C", //correct answer here
+    "2.5×10⁵ N/C",
+    "3.0×10⁵ N/C",
+    5
+  ],
+  // Q32 (AP-level Mixed)
+  [
+    "A uniform electric field of 600 N/C exists over a distance of 0.1 m. Calculate the potential difference.",
+    "ΔV = E×d = 600×0.1 = 60 V.",
+    "40 V",
+    "50 V",
+    "60 V", //correct answer here
+    "70 V",
+    "80 V",
+    5
+  ],
+  // Q33 (AP-level Mixed)
+  [
+    "A 10 μC charge produces a potential of 900 V at a point. Calculate the distance from the charge. (k = 9×10⁹)",
+    "Since V = kQ/r, r = kQ/V = (9×10⁹×10×10⁻⁶)/900 = 100 m.",
+    "50 m",
+    "75 m",
+    "100 m", //correct answer here
+    "125 m",
+    "150 m",
+    5
+  ],
+  // Q34 (AP-level Mixed – Modified)
+  [
+    "Calculate the electric potential energy gained by a 1×10⁻⁶ C charge accelerated through a 500 V potential difference.",
+    "ΔU = qV = 1×10⁻⁶×500 = 5×10⁻⁴ J.",
+    "2.5×10⁻⁴ J",
+    "4×10⁻⁴ J",
+    "5×10⁻⁴ J", //correct answer here
+    "6×10⁻⁴ J",
+    "7×10⁻⁴ J",
+    5
+  ],
+  // Q35 (AP-level Mixed)
+  [
+    "Calculate the electric potential energy between charges 4×10⁻⁶ C and 2×10⁻⁶ C separated by 0.15 m. (k = 9×10⁹)",
+    "U = k×(4×10⁻⁶×2×10⁻⁶)/0.15 = (9×10⁹×8×10⁻¹²)/0.15 = 0.48 J.",
+    "0.24 J",
+    "0.36 J",
+    "0.48 J", //correct answer here
+    "0.60 J",
+    "0.72 J",
+    5
+  ],
+  // Q36 (AP-level Mixed – Modified)
+  [
+    "A particle with charge 3×10⁻⁶ C has 2.25×10⁻⁵ J of work done on it as it moves between two points. Calculate the potential difference between these points.",
+    "ΔV = Work/q = 2.25×10⁻⁵/(3×10⁻⁶) = 7.5 V.",
+    "5 V",
+    "6 V",
+    "7.5 V", //correct answer here
+    "9 V",
+    "10 V",
+    5
+  ],
+  // Q37 (AP-level Mixed)
+  [
+    "A point charge produces a potential of 400 V at a point. If an 8×10⁻⁶ C charge is brought from infinity to that point, calculate the change in its potential energy.",
+    "ΔU = qV = 8×10⁻⁶×400 = 0.0032 J.",
+    "0.0024 J",
+    "0.0032 J", //correct answer here
+    "0.0040 J",
+    "0.0050 J",
+    "0.0060 J",
+    4
+  ],
+  // Q38 (AP-level Mixed – Modified)
+  [
+    "Calculate the change in electric potential energy for an electron accelerated through a potential difference of 200 V. (e = 1.6×10⁻¹⁹ C)",
+    "ΔU = e×V = 1.6×10⁻¹⁹×200 = 3.2×10⁻¹⁷ J.",
+    "1.6×10⁻¹⁷ J",
+    "2.4×10⁻¹⁷ J",
+    "3.2×10⁻¹⁷ J", //correct answer here
+    "4.0×10⁻¹⁷ J",
+    "5.0×10⁻¹⁷ J",
+    5
+  ],
+  // Q39 (AP-level Mixed)
+  [
+    "Calculate the magnitude of the force on a 5×10⁻⁶ C charge placed in an electric field of 2.5×10⁴ N/C.",
+    "F = qE = 5×10⁻⁶×2.5×10⁴ = 0.125 N.",
+    "0.0625 N",
+    "0.125 N", //correct answer here
+    "0.25 N",
+    "0.5 N",
+    "1.0 N",
+    4
+  ],
+  // Q40 (AP-level Mixed)
+  [
+    "A uniform electric field does 0.08 J of work in moving a 3×10⁻⁶ C charge. Calculate the potential difference across the region.",
+    "ΔV = W/q = 0.08/(3×10⁻⁶) ≈ 2.67×10⁴ V.",
+    "1.5×10⁴ V",
+    "2.0×10⁴ V",
+    "2.67×10⁴ V", //correct answer here
+    "3.0×10⁴ V",
+    "3.5×10⁴ V",
+    5
+  ],
+  // Q41 (AP-level Mixed)
+  [
+    "A 2×10⁻⁶ C charge is moved from a point at 150 V to a point at 50 V. Calculate the work done by the electric field.",
+    "W = q(V_initial - V_final) = 2×10⁻⁶×(150 - 50) = 2.0×10⁻⁴ J.",
+    "1.0×10⁻⁴ J",
+    "1.5×10⁻⁴ J",
+    "2.0×10⁻⁴ J", //correct answer here
+    "2.5×10⁻⁴ J",
+    "3.0×10⁻⁴ J",
+    5
+  ],
+  // Q42 (AP-level Mixed – Modified)
+  [
+    "Calculate the ratio of the change in electric potential energy for a proton (charge e) and an alpha particle (charge 2e) when both are accelerated through a 500 V potential difference.",
+    "For a proton: ΔU = e×500; for an alpha: ΔU = 2e×500; the ratio is (e×500)/(2e×500) = 1/2.",
+    "1/4",
+    "1/2", //correct answer here
+    "1",
+    "2",
+    "4",
+    4
+  ],
+  // Q43 (AP-level Mixed)
+  [
+    "Calculate the net electric potential at the midpoint between two equal charges of 4×10⁻⁶ C separated by 0.3 m. (k = 9×10⁹)",
+    "Each charge produces V = kQ/r with r = 0.15 m; thus, V_total = 2×(9×10⁹×4×10⁻⁶/0.15) = 480,000 V.",
+    "240,000 V",
+    "360,000 V",
+    "480,000 V", //correct answer here
+    "600,000 V",
+    "720,000 V",
+    5
+  ],
+  // Q44 (AP-level Mixed)
+  [
+    "A 1×10⁻⁶ C charge produces a potential of 200 V at a point. If a second 2×10⁻⁶ C charge is placed at the same point, what is the additional potential energy added?",
+    "Additional energy ΔU = q×V = 2×10⁻⁶×200 = 4×10⁻⁴ J.",
+    "2×10⁻⁴ J",
+    "4×10⁻⁴ J", //correct answer here
+    "6×10⁻⁴ J",
+    "8×10⁻⁴ J",
+    "1×10⁻³ J",
+    4
+  ],
+  // Q45 (AP-level Mixed)
+  [
+    "In a non-uniform electric field given by E(x) = 1000/(1+x) N/C (x in m), calculate the potential difference between x = 0 and x = 1 m.",
+    "ΔV = -∫₀¹ [1000/(1+x)] dx = -1000 ln(1+x)|₀¹ = -1000 ln2 ≈ -693 V.",
+    "-500 V",
+    "-600 V",
+    "-693 V", //correct answer here
+    "-800 V",
+    "-900 V",
+    5
+  ],
+  // Q46 (AP-level Mixed)
+  [
+    "A 3×10⁻⁶ C charge is placed 0.1 m from a 2×10⁻⁶ C charge. Calculate the work required to bring them from infinity to this separation. (k = 9×10⁹)",
+    "U = k(Q₁Q₂)/r = 9×10⁹×(3×10⁻⁶×2×10⁻⁶)/0.1 = 0.54 J.",
+    "0.27 J",
+    "0.54 J", //correct answer here
+    "0.81 J",
+    "1.08 J",
+    "1.35 J",
+    4
+  ],
+  // Q47 (AP-level Mixed)
+  [
+    "A proton experiences 2.5×10⁻¹⁵ J of work done over a distance of 0.02 m. Calculate the potential difference across that distance and the corresponding uniform electric field.",
+    "ΔV = W/q = 2.5×10⁻¹⁵/(1.6×10⁻¹⁹) ≈ 15,625 V; then E = ΔV/d = 15,625/0.02 = 7.81×10⁵ N/C.",
+    "5.0×10⁵ N/C",
+    "6.5×10⁵ N/C",
+    "7.81×10⁵ N/C", //correct answer here
+    "8.5×10⁵ N/C",
+    "1.0×10⁶ N/C",
+    5
+  ],
+  // Q48 (AP-level Mixed)
+  [
+    "A 0.5 kg object with a net charge of 1×10⁻⁶ C is released in a uniform electric field of 2000 N/C. Calculate its acceleration. (Use F = qE and a = F/m)",
+    "F = qE = 1×10⁻⁶×2000 = 0.002 N; then a = F/m = 0.002/0.5 = 0.004 m/s².",
+    "0.002 m/s²",
+    "0.004 m/s²", //correct answer here
+    "0.008 m/s²",
+    "0.01 m/s²",
+    "0.02 m/s²",
+    4
+  ],
+  // Q49 (AP-level Mixed – Modified)
+  [
+    "Two charges, 2×10⁻⁶ C and 3×10⁻⁶ C, are 0.2 m apart. Calculate the force between them. (k = 9×10⁹)",
+    "F = k|Q₁Q₂|/r² = 9×10⁹×(2×10⁻⁶×3×10⁻⁶)/(0.2²) = 1.35 N.",
+    "1.0 N",
+    "1.2 N",
+    "1.35 N", //correct answer here
+    "1.5 N",
+    "1.65 N",
+    5
+  ],
+  // Q50 (AP-level Mixed – Modified)
+  [
+    "Calculate the electric potential energy gained by a 5×10⁻⁶ C charge when accelerated through a 600 V potential difference.",
+    "ΔU = qV = 5×10⁻⁶×600 = 3×10⁻³ J.",
+    "2×10⁻³ J",
+    "2.5×10⁻³ J",
+    "3×10⁻³ J", //correct answer here
+    "3.5×10⁻³ J",
+    "4×10⁻³ J",
+    5
+  ]
+];
+let array = [
+  [-1, 300], // 0
+  [-11, 290], // 100
+  [-21, 275], // 200
+  [-32, 260], // 300
+  [-42, 245], // 400
+  [-53, 230], // 500
+  [-64, 218], // 600
+  [-75, 207], // 700
+  [-83, 197], // 800
+  [-92, 188], // 900
+  [-101, 180], // 1000
+  [-112, 173], // 1100
+  [-125, 167], // 1200
+  [-133, 162], // 1300
+  [-144, 158], // 1400
+  [-152, 154], // 1500
+  [-161, 150], // 1600
+  [-175, 147], // 1700
+  [-183, 144], // 1800
+  [-215, 94], // 1900
+  [-242, 82], // 2000
+  [-275, 73], // 2100
+  [-302, 67], // 2200
+  [-321, 51], // 2300
+  [-349, 42], // 2400
+  [-381, 36], // 2500
+  [-418, 31], // 2600
+  [-427, 27], // 2700
+  [-431, 24], // 2800
+  [-434, 22], // 2900
+  [-436, 21], // 3000
+  [-437, 20], // 3100
+  [-437, 19], // 3200
+  [-437, 19], // 3300
+];
+
+
+// Global variables for Elo rating history and Chart instance
+let ratingHistory = [];
+let attemptCount = 0;
+
+// Preload 25 columns (labels 1 to 25)
+let initialLabels = Array.from({ length: 25 }, (_, i) => i + 1);
+
+// Initialize Chart.js line chart for Elo progression
+const ctx = document.getElementById("eloChart").getContext("2d");
+const eloChart = new Chart(ctx, {
+  type: "line",
+  data: {
+    labels: [], // preloaded with 25 columns
+    datasets: [
+      {
+        label: "Progression",
+        data: [],
+        fill: false,
+        borderColor: "blue",
+        tension: 0.1,
+      },
+    ],
+  },
+  options: {
+    scales: {
+      x: {
+        title: {
+          display: true,
+          text: "Questions Solved",
+        },
+      },
+      y: {
+        beginAtZero: true,
+        suggestedMax: 2300,
+        title: {
+          display: true,
+          text: "Rating",
+        },
+      },
+    },
+  },
+});
+
+setTimeout(preloadAttempts, 1000);
+function preloadAttempts() {
+  attemptCount = -1;
+  for (var i = 0; i < ratingHistory.length; i++) {
+    attemptCount++;
+    // If attemptCount exceeds the preloaded labels, expand the labels array
+    if (attemptCount > eloChart.data.labels.length) {
+      eloChart.data.labels.push(attemptCount);
+    } else {
+      // Otherwise, update the existing label (optional)
+      eloChart.data.labels[attemptCount - 1] = attemptCount - 1;
+    }
+    eloChart.data.datasets[0].data.push(ratingHistory[i]);
+    eloChart.update();
+  }
+  if (ratingHistory.length > 0) {
+    eloChart.data.datasets[0].data.pop();
+    eloChart.update();
+  }
+}
+
+// Function to add a new attempt data point and update labels if needed
+function addAttempt(progressValue) {
+  attemptCount++;
+  ratingHistory.push(progressValue);
+  // If attemptCount exceeds the preloaded labels, expand the labels array
+  if (attemptCount > eloChart.data.labels.length) {
+    eloChart.data.labels.push(attemptCount);
+  } else {
+    // Otherwise, update the existing label (optional)
+    eloChart.data.labels[attemptCount - 1] = attemptCount;
+  }
+  eloChart.data.datasets[0].data.push(progressValue);
+  eloChart.update();
+}
+
+let url = window.location.href;
+let cache = url.split("/class/")[1];
+let progress = 500;
+let notComingAgain = [];
+let problem = 2;
+let questionsSolved = -1;
+let totalProg = 500;
+let problemsCorrect = 0;
+let qs = document.getElementById("qs");
+let acc = document.getElementById("acc");
+let cr = document.getElementById("cr");
+let ar = document.getElementById("ar");
+
+const progressBar = document.getElementById("progressBar");
+const pro = document.getElementById("pro");
+progressBar.style.width = progress / 32 + "%";
+progressBar.textContent = Math.round(progress);
+
+// Initialize rating history with initial progress
+ratingHistory.push(progress);
+eloChart.data.labels.push(attemptCount);
+eloChart.data.datasets[0].data.push(progress);
+eloChart.update();
+
+loadNewQuestion();
+setInterval(progCheck, 100);
+
+function progCheck() {
+  var progres = ar.innerHTML;
+  if (progres < 1200) {
+    document.getElementById("progressBar").style.backgroundColor = "#ff2c00";
+  } else if (progres < 1800) {
+    document.getElementById("progressBar").style.backgroundColor = "#fcaf50";
+  } else if (progres < 2400) {
+    document.getElementById("progressBar").style.backgroundColor = "#4caf50";
+  } else {
+    document.getElementById("progressBar").style.backgroundColor = "#02a2ff";
+  }
+}
+
+function problemWrong() {
+  updateRating(
+    Math.round(
+      array[Math.floor(progress / 100)][0] * ratingJump
+    )
+  );
+  document.getElementById("cor").innerHTML = "Wrong!";
+  document.getElementById("problemOptions").style.display = "none";
+  document.getElementById("solutionOptions").style.display = "inline";
+  document.getElementById("solution").innerHTML = questions[problem][1];
+}
+
+function problemCorrect() {
+  if (progress < 5000) {
+    updateRating(array[Math.floor(progress / 100)][1] * ratingJump);
+  }
+  problemsCorrect++;
+  document.getElementById("cor").innerHTML = "Correct!";
+  document.getElementById("problemOptions").style.display = "none";
+  document.getElementById("solutionOptions").style.display = "inline";
+  document.getElementById("solution").innerHTML = questions[problem][1];
+}
+
+function loadNewQuestion() {
+  var ele = document.getElementsByName("gender");
+  for (var i = 0; i < ele.length; i++) {
+    ele[i].checked = false;
+  }
+  progressBar.innerHTML = parseInt(ar.innerHTML);
+  questionsSolved++;
+  problem = Math.round(progress / 100) - 1;
+  if (progress > 1800 && problem < 25) {
+    problem = 25;
+  } else if (problem > 49) {
+    problem = (problem % 25) + 24;
+  }
+  console.log(notComingAgain);
+  console.log(problem);
+  while (notComingAgain.indexOf(problem) > -1) {
+    problem++;
+  }
+  document.getElementById("problem").innerHTML = questions[problem][0];
+  document.getElementById("problemOptions").style.display = "inline";
+  document.getElementById("solutionOptions").style.display = "none";
+  document.getElementById("o1").innerHTML = questions[problem][2];
+  document.getElementById("o2").innerHTML = questions[problem][3];
+  document.getElementById("o3").innerHTML = questions[problem][4];
+  document.getElementById("o4").innerHTML = questions[problem][5];
+  document.getElementById("o5").innerHTML = questions[problem][6];
+}
+
+function gradeProblem(x) {
+  let id = ["option0", "option1", "option2", "option3", "option4"];
+  notComingAgain.push(problem);
+  if (x) {
+    if (document.getElementById(id[questions[problem][7] - 3]).checked) {
+      //They selected the correct option
+      problemCorrect();
+      totalProg += Math.max(parseInt(ar.innerHTML), progress);
+    } else {
+      //They selected the wrong option
+      problemWrong();
+      totalProg += progress / 2;
+    }
+  } else {
+    //They clicked "See Solution"
+    updateRating(
+      Math.round(
+        array[Math.floor(progress / 100)][0] * ratingJump
+      )
+    );
+    document.getElementById("cor").innerHTML = "Don't worry, you got this!";
+    document.getElementById("problemOptions").style.display = "none";
+    document.getElementById("solutionOptions").style.display = "inline";
+    document.getElementById("solution").innerHTML = questions[problem][1];
+    totalProg += progress / 2;
+  }
+  cr.innerHTML = progress;
+  ar.innerHTML = Math.round(totalProg / (attemptCount + 2));
+  acc.innerHTML =
+    Math.round((problemsCorrect * 100) / (questionsSolved + 1)) + "%";
+  qs.innerHTML = questionsSolved + 1;
+  progressBar.style.width =
+    Math.round(totalProg / (attemptCount + 2)) / 32 + "%";
+
+  if (
+    Math.round(totalProg / (attemptCount + 2)) -
+      parseInt(progressBar.innerHTML) >
+    0
+  ) {
+    progressBar.innerHTML =
+      "<strong>" +
+      Math.round(totalProg / (attemptCount + 2)) +
+      "</strong> (+" +
+      (Math.round(totalProg / (attemptCount + 2)) -
+        parseInt(progressBar.innerHTML)) +
+      ")";
+  } else {
+    progressBar.innerHTML =
+      "<strong>" +
+      Math.round(totalProg / (attemptCount + 2)) +
+      "</strong> (" +
+      (Math.round(totalProg / (attemptCount + 2)) -
+        parseInt(progressBar.innerHTML)) +
+      ")";
+  }
+
+  setTimeout(function () {
+    attemptCount++;
+    ratingHistory.push(Math.round(totalProg / (attemptCount + 1)));
+    if (attemptCount > 25) {
+      eloChart.data.labels.push(attemptCount);
+    }
+    eloChart.data.datasets[0].data.push(
+      Math.round(totalProg / (attemptCount + 1))
+    );
+    eloChart.update();
+  }, 201 * 3);
+}
+
+for (var i = 0; i < initialLabels.length; i++) {
+  eloChart.data.labels.push(initialLabels[i]);
+}
+
+// Updated updateRating function that also updates the Elo progression chart
+function updateRating(amount) {
+  let val = progress;
+  /*for (let i = 200; i >= 1; i--) {
+          setTimeout(function () {
+            val += (amount * i) / 20100;
+            progressBar.style.width = val / 32 + "%";
+            if (amount < 0) {
+              progressBar.innerHTML =
+                "<strong>" + Math.round(val) + "</strong> (" + amount + ")";
+            } else {
+              progressBar.innerHTML =
+                "<strong>" + Math.round(val) + "</strong> (+" + amount + ")";
+            }
+            if (val < 499.5) {
+              progressBar.style.backgroundColor = "#ff0000";
+            } else {
+              progressBar.style.backgroundColor = "#4caf50";
+            }
+          }, i * 3);
+        }*/
+  progress += amount;
+
+  /* After the animation, update the chart with the new rating.
+        setTimeout(function () {
+          attemptCount++;
+          ratingHistory.push(progress);
+          if (attemptCount > 25) {
+            eloChart.data.labels.push(attemptCount);
+          }
+          eloChart.data.datasets[0].data.push(progress);
+          eloChart.update();
+        }, 201 * 3);*/
+}
+// Inject CSS for the popup
+  var popupStyle = document.createElement("style");
+  popupStyle.innerHTML = `
+  .popup-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(0, 0, 0, 0.6);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 10000;
+  }
+  .popup-content {
+    background: #fff;
+    padding: 20px 30px;
+    border-radius: 10px;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+    text-align: center;
+    font-size: 1.2em;
+    max-width: 50%;
+    max-height: 75%;
+    position: relative;
+    overflow-y: scroll;
+  }
+  .close-btn {
+    position: absolute;
+    top: 10px;
+    right: 15px;
+    font-size: 20px;
+    cursor: pointer;
+    background: none;
+    border: none;
+  }
+  @keyframes fadeIn {
+    from { opacity: 0; transform: scale(0.8); }
+    to { opacity: 1; transform: scale(1); }
+  }
+`;
+  document.head.appendChild(popupStyle);
+
+  function showPopup(message) {
+    var overlay = document.createElement("div");
+    overlay.className = "popup-overlay";
+    
+    var content = document.createElement("div");
+    content.className = "popup-content";
+    content.innerHTML = message;
+    
+    var closeButton = document.createElement("button");
+    closeButton.className = "close-btn";
+    closeButton.innerHTML = "&times;";
+    closeButton.onclick = function() {
+      document.body.removeChild(overlay);
+    };
+    
+    overlay.onclick = function(event) {
+      if (event.target === overlay) {
+        document.body.removeChild(overlay);
+      }
+    };
+    
+    content.appendChild(closeButton);
+    overlay.appendChild(content);
+    document.body.appendChild(overlay);
+  }
+
+  var proficiencyShown = false;
+  var masteryShown = false;
+
+  setInterval(function () {
+    if (typeof progress !== "undefined") {
+      if (progress >= 4000 && !proficiencyShown) {
+        proficiencyShown = true;
+        showPopup(
+          "<strong>Proficiency Achieved!</strong><br>You have achieved proficiency by getting to a rating above 4000.<br>"
+        );
+      }
+      if (progress >= 5000 && !masteryShown) {
+        masteryShown = true;
+        showPopup(
+          "<strong>Mastery Achieved!</strong><br>You have achieved mastery by getting to a rating above 5000."
+        );
+      }
+    }
+  }, 500);
+
+  showPopup('<h3>Tutorial - How to Use Elo Practice</h3><iframe width="560" height="315" src="https://www.youtube.com/embed/VYgirFHLwrM?si=h47XOI1EQchj7d-z" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe><br><p>For practice units, we have a database full of questions with each problem having its own problem rating, which you can view under the stats tab. As you get problems right, you will level up your rating, when you miss problems, you lose rating. As your rating gets higher and higher, the problems become more and more difficult. Problems rated above 1800 are real AP questions taken straight from past exams, so you should have plenty of practice. <strong>Consider completed practice as either you completing 25 or more questions or getting to a rating above 1800.</strong><br><br><i>Note: Progress is not saved when you close or refresh the tab</i>'); 
+    </script>
+    </body>
+</html>

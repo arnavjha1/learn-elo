@@ -1,0 +1,1131 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Dynamic Progress Bar</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap"
+      rel="stylesheet"
+    />
+    <!-- Include Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="/script.js" defer></script>
+    <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <style>
+      /* Global Styles */
+      body {
+        margin: 0;
+        padding: 0;
+        font-family: "Roboto", sans-serif;
+        background: linear-gradient(135deg, #83a4d4, #b6fbff);
+        color: #333;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        min-height: 100vh;
+      }
+      .container {
+        overflow-y: scroll;
+        position: fixed;
+        top: 20px;
+        bottom: 20px;
+        background: #fff;
+        max-width: 800px;
+        width: 90%;
+        padding: 30px;
+        border-radius: 15px;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+      }
+      /* Chart Styles */
+      #eloChart {
+        margin-bottom: 20px;
+      }
+      /* Progress Bar Styles */
+      .progress-container {
+        width: 100%;
+        background-color: #e0e0e0;
+        border-radius: 25px;
+        overflow: hidden;
+        margin-bottom: 20px;
+      }
+      .progress-bar {
+        width: 0;
+        height: 30px;
+        text-align: center;
+        line-height: 30px;
+        color: white;
+        transition: width 1s ease;
+      }
+      #progressBar {
+        background-color: #ff2c00;
+        transition: width 1s ease, background-color 1.5s ease;
+      }
+      /* Content Styles */
+      h1 {
+        font-size: 2em;
+        margin-bottom: 10px;
+        text-align: center;
+      }
+      h2 {
+        text-align: center;
+      }
+      h4 {
+        font-weight: 500;
+      }
+      .question,
+      .option,
+      .solution {
+        margin-bottom: 15px;
+      }
+      .option input[type="radio"] {
+        margin-right: 10px;
+      }
+      button {
+        background-color: #4caf50;
+        color: #fff;
+        border: none;
+        padding: 10px 20px;
+        font-size: 1em;
+        border-radius: 5px;
+        cursor: pointer;
+        margin-right: 10px;
+        transition: background-color 0.3s ease;
+      }
+      button:hover {
+        background-color: #43a047;
+      }
+      /* Visibility Settings */
+      #problemOptions {
+        display: block;
+      }
+      #solutionOptions {
+        display: none;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <!-- Progress Bar -->
+      <div class="progress-container" id="pro">
+        <div class="progress-bar" id="progressBar">0%</div>
+      </div>
+      <h1>Unit 1 Practice</h1>
+      <div class="question">
+        <h4>
+          <span id="problem">What is the limit as x approaches zero?</span>
+        </h4>
+      </div>
+      <div class="option">
+        <input type="radio" name="gender" id="option0" /><span id="o1"></span
+        ><br />
+        <input type="radio" name="gender" id="option1" /><span id="o2"></span
+        ><br />
+        <input type="radio" name="gender" id="option2" /><span id="o3"></span
+        ><br />
+        <input type="radio" name="gender" id="option3" /><span id="o4"></span
+        ><br />
+        <input type="radio" name="gender" id="option4" /><span id="o5"></span
+        ><br />
+      </div>
+      <div id="problemOptions">
+        <button onclick="gradeProblem(true)">Submit</button>
+        <button onclick="gradeProblem(false)">See Solution</button>
+      </div>
+      <div id="solutionOptions">
+        <strong><span id="cor">Wrong!</span> This is the solution:</strong
+        ><br />
+        <span id="solution"></span><br /><br />
+        <button onclick="loadNewQuestion()">Continue</button>
+      </div>
+      <!-- Elo Progression Chart -->
+      <canvas id="eloChart" width="800" height="200"></canvas>
+      <h4>Stats</h4>
+      <ul>
+        <li>Questions Solved: <c id="qs">0</c></li>
+        <li>Problem Rating: <c id="cr">500</c></li>
+        <li>Accuracy: <c id="acc">N/A</c></li>
+        <li>Actual Rating: <c id="ar">500</c></li>
+      </ul>
+    </div>
+  <script>
+   const ratingJump = 1.8;    
+   const questions = [
+  // --- Topic 1.1: Scarcity & Opportunity Cost ---
+  // Q1
+  [
+    "If an economy can produce either 100 units of Good A or 200 units of Good B, what is the opportunity cost of producing 1 unit of A?",
+    "Opportunity cost = (200 units of B)/(100 units of A) = 2 units of B per unit A.",
+    "2 units of B", //correct answer here
+    "1 unit of B",
+    "0.5 unit of B",
+    "3 units of B",
+    "4 units of B",
+    3
+  ],
+  // Q2
+  [
+    "A student has 10 hours available and can study (worth 5 utils/hour) or enjoy leisure (worth 3 utils/hour). What is the opportunity cost (in utils) of 1 hour of leisure?",
+    "By choosing leisure, the student gives up 5 utils of satisfaction from studying.",
+    "3 utils",
+    "4 utils",
+    "5 utils", //correct answer here
+    "6 utils",
+    "7 utils",
+    5
+  ],
+  // Q3
+  [
+    "A firm can produce either 50 gadgets or 150 widgets. What is the opportunity cost of producing one gadget?",
+    "Opportunity cost = (150 widgets)/(50 gadgets) = 3 widgets per gadget.",
+    "1 widget",
+    "2 widgets",
+    "3 widgets", //correct answer here
+    "4 widgets",
+    "5 widgets",
+    5
+  ],
+  // Q4
+  [
+    "If you spend $30 on a meal rather than saving it, and the next best alternative saving would earn 10% on $30, what is the opportunity cost in dollars?",
+    "Opportunity cost = 10% of $30 = $3.",
+    "$2",
+    "$4",
+    "$5",
+    "$3", //correct answer here
+    "$6",
+    6
+  ],
+  // Q5
+  [
+    "A government with a fixed budget of $1,000,000 faces a trade‐off: every extra $200,000 spent on healthcare reduces education spending by $250,000. What is the opportunity cost (in dollars) of an extra $200,000 in healthcare?",
+    "Opportunity cost = $250,000 of education.",
+    "$200,000",
+    "$150,000",
+    "$300,000",
+    "$100,000",
+    "$250,000", //correct answer here
+    7
+  ],
+
+  // --- Topic 1.2: Economic Systems ---
+  // Q6
+  [
+    "Country X (a command economy) allocates 40% of output to social programs, whereas Country Y (a free‑market economy) allocates 25%. By what percentage is Country X’s allocation greater than Country Y’s?",
+    "Percentage difference = ((40 - 25)/25)×100 = (15/25)×100 = 60%.",
+    "60%", //correct answer here
+    "50%",
+    "40%",
+    "30%",
+    "70%",
+    3
+  ],
+  // Q7
+  [
+    "In a free‑market economy, if government spending on public goods is $300 billion in a country with GDP $1,200 billion, what percentage of GDP is spent on public goods?",
+    "Percentage = (300/1200)×100 = 25%.",
+    "$300 billion",
+    "25%", //correct answer here
+    "20%",
+    "30%",
+    "50%",
+    4
+  ],
+  // Q8
+  [
+    "Two countries have labor endowments of 500 and 300 units, respectively. By what percent is the larger country’s labor endowment greater than the smaller’s?",
+    "Percentage difference = ((500 - 300)/300)×100 = (200/300)×100 ≈ 66.67%.",
+    "66.67%", //correct answer here
+    "50%",
+    "75%",
+    "100%",
+    "33.33%",
+    3
+  ],
+  // Q9
+  [
+    "If Country X’s productivity increases by 10% while Country Y’s remains unchanged, by what percent is Country X’s output higher relative to Country Y?",
+    "Relative increase is 10%.",
+    "5%",
+    "8%",
+    "10%", //correct answer here
+    "12%",
+    "15%",
+    5
+  ],
+
+  // --- Topic 1.3: Production Possibilities Curve (PPC) ---
+  // Q10
+  [
+    "An economy’s PPC shows it can produce either 200 units of X or 100 units of Y. What is the opportunity cost of 1 unit of X in terms of Y?",
+    "Opportunity cost = 100/200 = 0.5 unit of Y per X.",
+    "0.5 unit of Y", //correct answer here
+    "1 unit of Y",
+    "2 units of Y",
+    "0.25 unit of Y",
+    "None of the above",
+    3
+  ],
+  // Q11
+  [
+    "Using the same PPC, what is the opportunity cost of producing one additional unit of Y?",
+    "Opportunity cost = 200/100 = 2 units of X per Y.",
+    "1 unit of X",
+    "2 units of X", //correct answer here
+    "0.5 unit of X",
+    "3 units of X",
+    "4 units of X",
+    4
+  ],
+  // Q12
+  [
+    "If an economy on its PPC reallocates resources to produce 10 more units of X and loses 5 units of Y, what is the marginal opportunity cost of X?",
+    "Marginal opportunity cost = 5/10 = 0.5 unit of Y per X.",
+    "0.25 unit of Y",
+    "0.75 unit of Y",
+    "0.5 unit of Y", //correct answer here
+    "1 unit of Y",
+    "2 units of Y",
+    5
+  ],
+  // Q13
+  [
+    "A technological improvement shifts the PPC so that maximum production of Good X increases from 200 to 250 units while Good Y remains at 100. What is the percentage growth in X’s production capability?",
+    "Growth = ((250-200)/200)*100 = 25%.",
+    "20%",
+    "25%", //correct answer here
+    "30%",
+    "15%",
+    "50%",
+    4
+  ],
+
+  // --- Topic 1.4: Comparative Advantage ---
+  // Q14
+  [
+    "Country A can produce 20 units of wine or 10 units of cloth. What is its opportunity cost for 1 unit of wine?",
+    "Opportunity cost for wine = 10 cloth/20 wine = 0.5 unit of cloth.",
+    "0.5 unit of cloth", //correct answer here
+    "1 unit of cloth",
+    "2 units of cloth",
+    "0.25 unit of cloth",
+    "None",
+    3
+  ],
+  // Q15
+  [
+    "Country B can produce 15 units of wine or 15 units of cloth. What is its opportunity cost for 1 unit of wine?",
+    "Opportunity cost for wine = 15 cloth/15 wine = 1 unit of cloth.",
+    "0.5 unit of cloth",
+    "1 unit of cloth", //correct answer here
+    "1.5 units of cloth",
+    "2 units of cloth",
+    "None",
+    4
+  ],
+  // Q16
+  [
+    "Between Country A (OC of 0.5 cloth per wine) and Country B (OC of 1 cloth per wine), which has a comparative advantage in wine production?",
+    "Lower opportunity cost means comparative advantage. Country A has OC of 0.5 compared to 1 in Country B.",
+    "Country B",
+    "Country A", //correct answer here
+    "Both",
+    "Neither",
+    "Cannot be determined",
+    4
+  ],
+  // Q17
+  [
+    "If the two countries trade at a rate of 0.75 unit of cloth per unit of wine, do both countries benefit?",
+    "Since 0.75 lies between Country A’s 0.5 and Country B’s 1, both benefit.",
+    "No, only Country A benefits",
+    "No, only Country B benefits",
+    "Yes, both benefit", //correct answer here
+    "Yes, but only if volumes are equal",
+    "Not enough information",
+    5
+  ],
+
+  // --- Topic 1.5: Cost–Benefit Analysis & Marginal Utility ---
+  // Q18
+  [
+    "A consumer’s total utility from 3 units of a good is 150 utils and from 4 units is 170 utils. What is the marginal utility of the 4th unit?",
+    "Marginal utility = 170 - 150 = 20 utils.",
+    "15 utils",
+    "18 utils",
+    "20 utils", //correct answer here
+    "22 utils",
+    "25 utils",
+    5
+  ],
+  // Q19
+  [
+    "If the price of the good is $2, what is the marginal utility per dollar for the 4th unit (20 utils)?",
+    "Marginal utility per dollar = 20/2 = 10 utils per dollar.",
+    "8 utils/dollar",
+    "10 utils/dollar", //correct answer here
+    "12 utils/dollar",
+    "15 utils/dollar",
+    "20 utils/dollar",
+    4
+  ],
+  // Q20
+  [
+    "A project yields an additional benefit of $50 but costs an extra $60. What is the net benefit?",
+    "Net benefit = $50 - $60 = -$10.",
+    "$10",
+    "$0",
+    "-$10", //correct answer here
+    "$-20",
+    "$20",
+    5
+  ],
+  // Q21
+  [
+    "If a consumer’s decision analysis shows that an extra unit of a good provides 80 utils at a cost of $8, what is the MU per dollar?",
+    "MU per dollar = 80/8 = 10 utils per dollar.",
+    "8 utils/dollar",
+    "9 utils/dollar",
+    "10 utils/dollar", //correct answer here
+    "11 utils/dollar",
+    "12 utils/dollar",
+    5
+  ],
+
+  // --- Topic 1.6: Consumer Choice & Marginal Utility per Dollar ---
+  // Q22
+  [
+    "If the marginal utility for Good X is 40 utils and its price is $8, what is its MU per dollar?",
+    "MU per dollar = 40/8 = 5 utils per dollar.",
+    "5 utils/dollar", //correct answer here
+    "4 utils/dollar",
+    "6 utils/dollar",
+    "8 utils/dollar",
+    "10 utils/dollar",
+    3
+  ],
+  // Q23
+  [
+    "Good Y has a marginal utility of 30 utils at a price of $5. What is its MU per dollar?",
+    "MU per dollar = 30/5 = 6 utils per dollar.",
+    "5 utils/dollar",
+    "6 utils/dollar", //correct answer here
+    "7 utils/dollar",
+    "8 utils/dollar",
+    "9 utils/dollar",
+    4
+  ],
+  // Q24
+  [
+    "If a consumer’s budget is $50 and the price of Good Y is $5, how many units of Y can they purchase?",
+    "Number of units = 50/5 = 10.",
+    "8 units",
+    "9 units",
+    "10 units", //correct answer here
+    "11 units",
+    "12 units",
+    5
+  ],
+  // Q25
+  [
+    "If the MU per dollar for Good X is lower than for Good Y, the consumer should:",
+    "Spend more on Good Y to maximize utility.",
+    "Spend more on X",
+    "Spend equally",
+    "Spend more on Y", //correct answer here
+    "Reduce overall spending",
+    "Increase spending on both equally",
+    5
+  ],
+
+  // --- AP‑Level Mixed (Advanced Calculation Problems) ---
+  // Q26
+  [
+    "In a market, demand is Qd = 100 – 2P and supply is Qs = 20 + 3P. Find the equilibrium price and quantity.",
+    "Set 100 – 2P = 20 + 3P → 80 = 5P, so P = 16; then Q = 100 – 2×16 = 68.",
+    "P = 16, Q = 68", //correct answer here
+    "P = 14, Q = 72",
+    "P = 18, Q = 64",
+    "P = 16, Q = 70",
+    "P = 14, Q = 68",
+    3
+  ],
+  // Q27
+  [
+    "With the market from Q26, a $4 per unit tax is imposed on producers. The new supply becomes Qs = 20 + 3(P – 4). Find the new equilibrium price (to consumers) and quantity.",
+    "New supply: Qs = 20 + 3P – 12 = 3P + 8. Equate: 100 – 2P = 3P + 8 → 92 = 5P, so P = 18.4; Q = 100 – 2×18.4 = 63.2.",
+    "P = 18.4, Q = 63.2", //correct answer here
+    "P = 16.0, Q = 68",
+    "P = 20.0, Q = 60",
+    "P = 15.0, Q = 70",
+    "P = 18.4, Q = 68",
+    3
+  ],
+  // Q28
+  [
+    "A monopolist faces demand P = 50 – 0.5Q and has constant marginal cost of $10. Determine the profit‐maximizing output and price.",
+    "Total Revenue TR = (50 – 0.5Q)Q; MR = 50 – Q. Set MR = MC: 50 – Q = 10 → Q = 40; then P = 50 – 0.5×40 = 30.",
+    "Q = 40, P = $30", //correct answer here
+    "Q = 30, P = $35",
+    "Q = 40, P = $35",
+    "Q = 50, P = $25",
+    "Q = 30, P = $30",
+    3
+  ],
+  // Q29
+  [
+    "A firm has total cost TC = 100 + 10Q + Q² and total revenue TR = 50Q – Q². What is the output that maximizes profit?",
+    "Profit = TR – TC = 50Q – Q² – 100 – 10Q – Q² = 40Q – 2Q² – 100. dπ/dQ = 40 – 4Q = 0 → Q = 10; however, checking second derivative (–4) confirms a maximum. (Note: With Q=10, profit = 40×10 – 2×100 – 100 = 400 – 200 – 100 = 100.)",
+    "Q = 10", //correct answer here
+    "Q = 15",
+    "Q = 20",
+    "Q = 8",
+    "Q = 12",
+    3
+  ],
+  // Q30
+  [
+    "A firm’s marginal cost is MC = 2Q + 5, and its average revenue is AR = 45 – Q. Find the output level where profit is maximized.",
+    "Total revenue TR = (45 – Q)Q; MR = 45 – 2Q. Set MR = MC: 45 – 2Q = 2Q + 5 → 45 – 5 = 4Q, so Q = 10; then P = 45 – 10 = 35.",
+    "Q = 10, P = $35", //correct answer here
+    "Q = 8, P = $37",
+    "Q = 12, P = $33",
+    "Q = 10, P = $30",
+    "Q = 8, P = $35",
+    3
+  ],
+  // Q31
+  [
+    "In a competitive market, demand is Qd = 120 – 3P and supply is Qs = 2P + 10. Find the equilibrium.",
+    "Set 120 – 3P = 2P + 10 → 110 = 5P, so P = 22; then Q = 120 – 3×22 = 54.",
+    "P = 22, Q = 54", //correct answer here
+    "P = 20, Q = 60",
+    "P = 24, Q = 52",
+    "P = 22, Q = 50",
+    "P = 20, Q = 54",
+    3
+  ],
+  // Q32
+  [
+    "If the price elasticity of demand is –1.5 at P = $20, Q = 100, what is the estimated percentage change in quantity if price increases by 10%?",
+    "Using elasticity: %ΔQ = –1.5 × 10% = –15%.",
+    "-15%", //correct answer here
+    "-10%",
+    "-20%",
+    "-12%",
+    "-5%",
+    3
+  ],
+  // Q33
+  [
+    "A PPC is represented by QX^0.5 + QY^0.5 = 20. If the economy produces only X, what is the maximum output of X?",
+    "Set QY = 0: QX^0.5 = 20, so QX = 20² = 400 units.",
+    "400 units", //correct answer here
+    "200 units",
+    "100 units",
+    "20 units",
+    "800 units",
+    3
+  ],
+  // Q34
+  [
+    "A firm faces MC = 4 + 0.5Q and MR = 20 – Q. Find the output level that maximizes profit.",
+    "Set 20 – Q = 4 + 0.5Q → 20 – 4 = 1.5Q, so Q = 16/1.5 ≈ 10.67.",
+    "Q ≈ 10.67", //correct answer here
+    "Q ≈ 8.0",
+    "Q ≈ 12.0",
+    "Q ≈ 15.0",
+    "Q ≈ 20.0",
+    3
+  ],
+  // Q35
+  [
+    "In a market with demand P = 100 – 2Q and supply P = 20 + Q, compute the consumer surplus at equilibrium.",
+    "Equilibrium: 100 – 2Q = 20 + Q → Q = 26.67, P = 20 + 26.67 = 46.67. CS = ½*(100 – 46.67)*26.67 ≈ 711.",
+    "≈711", //correct answer here
+    "≈500",
+    "≈800",
+    "≈600",
+    "≈900",
+    3
+  ],
+  // Q36
+  [
+    "Using the same market as Q35, calculate the producer surplus at equilibrium.",
+    "Producer surplus = ½*(46.67 – 20)*26.67 ≈ 356.",
+    "≈356", //correct answer here
+    "≈300",
+    "≈400",
+    "≈500",
+    "≈250",
+    3
+  ],
+  // Q37
+  [
+    "Given demand Q = 200 – 4P and supply Q = 30 + 2P, a government subsidy of $5 per unit is given to suppliers (shifting supply to Q = 30 + 2(P + 5)). Find the new equilibrium consumer price and quantity.",
+    "New supply: Q = 30 + 2P + 10 = 2P + 40. Set 200 – 4P = 2P + 40 → 200 – 40 = 6P, P = 160/6 ≈ 26.67; Q = 200 – 4×26.67 ≈ 93.33.",
+    "P ≈ $26.67, Q ≈ 93.33", //correct answer here
+    "P ≈ $30, Q ≈ 90",
+    "P ≈ $25, Q ≈ 95",
+    "P ≈ $28, Q ≈ 88",
+    "P ≈ $26.67, Q ≈ 100",
+    3
+  ],
+  // Q38
+  [
+    "If supply changes from 50 to 70 units when price rises from $20 to $25, calculate the price elasticity of supply using the midpoint method.",
+    "ΔQ = 20; average Q = 60; ΔP = 5; average P = 22.5; Es = (20/60)/(5/22.5) ≈ 0.333/0.222 = 1.5.",
+    "1.5", //correct answer here
+    "1.0",
+    "2.0",
+    "0.75",
+    "1.25",
+    3
+  ],
+  // Q39
+  [
+    "A firm’s total cost function is TC = 200 + 10Q + Q². What is the marginal cost when Q = 10?",
+    "MC = d(TC)/dQ = 10 + 2Q; at Q = 10, MC = 10 + 20 = 30.",
+    "30", //correct answer here
+    "20",
+    "25",
+    "35",
+    "40",
+    3
+  ],
+  // Q40
+  [
+    "A monopolist has demand P = 80 – Q and constant marginal cost of 20. Find the profit‑maximizing output and price.",
+    "MR = 80 – 2Q; set 80 – 2Q = 20 → Q = 30; then P = 80 – 30 = 50.",
+    "Q = 30, P = $50", //correct answer here
+    "Q = 25, P = $55",
+    "Q = 35, P = $45",
+    "Q = 30, P = $40",
+    "Q = 25, P = $50",
+    3
+  ],
+  // Q41
+  [
+    "In a competitive market, a firm’s average total cost is ATC = 30 + 20/Q. If the market price is $50, what is the firm’s output if it produces at the point where ATC equals $40?",
+    "Set 30 + 20/Q = 40 → 20/Q = 10 → Q = 2.",
+    "Q = 2", //correct answer here
+    "Q = 4",
+    "Q = 5",
+    "Q = 6",
+    "Q = 8",
+    3
+  ],
+  // Q42
+  [
+    "A tax of $3 per unit is imposed on consumers in a market with Qd = 150 – 5P and Qs = 10 + 3P. Find the new equilibrium consumer price.",
+    "With tax, effective demand: Qd = 150 – 5(P + 3). Solve 150 – 5P – 15 = 10 + 3P → 135 – 5P = 10 + 3P → 125 = 8P, P = 15.625; consumer price = 15.625 + 3 ≈ 18.63.",
+    "≈$18.63", //correct answer here
+    "$15.00",
+    "$16.50",
+    "$20.00",
+    "$22.00",
+    3
+  ],
+  // Q43
+  [
+    "A firm has a production function Q = L^0.5 · K^0.5 and uses equal amounts of labor and capital. If the wage and rental rate are both $10 and total cost is $400, what is Q?",
+    "With L = K = x, total cost = 20x = 400, so x = 20. Then Q = √(20·20) = 20.",
+    "20", //correct answer here
+    "10",
+    "40",
+    "25",
+    "30",
+    3
+  ],
+  // Q44
+  [
+    "A consumer with utility function U(x, y) = xy faces prices Px = $5 and Py = $10 with an income of $100. Find the utility‑maximizing bundle assuming equal expenditure share.",
+    "For Cobb‑Douglas, optimal x = (income/(2×Px)) = 100/(10) = 10, y = 100/(2×10) = 5.",
+    "x = 10, y = 5", //correct answer here
+    "x = 5, y = 10",
+    "x = 8, y = 6",
+    "x = 12, y = 4",
+    "x = 10, y = 10",
+    3
+  ],
+  // Q45
+  [
+    "If demand shifts rightward by 20% while supply remains constant, and the initial equilibrium price was $30, estimate the new equilibrium price assuming linear supply and demand.",
+    "A rightward shift in demand typically increases price; using comparative statics the price may rise by about 10% (i.e. to $33).",
+    "$30",
+    "$33", //correct answer here
+    "$36",
+    "$35",
+    "$40",
+    4
+  ],
+  // Q46
+  [
+    "A consumer’s marginal utility for Good A is 50 utils at a price of $10, and for Good B is 30 utils at a price of $10. What is the ratio of MU per dollar for A to B?",
+    "MU per dollar for A = 50/10 = 5; for B = 30/10 = 3; ratio = 5:3.",
+    "5:3", //correct answer here
+    "3:5",
+    "1:1",
+    "5:1",
+    "3:1",
+    3
+  ],
+  // Q47
+  [
+    "A price floor set $5 above equilibrium reduces quantity traded from 100 to 80 units. Compute the deadweight loss.",
+    "DWL = 0.5 × (price difference) × (quantity reduction) = 0.5 × 5 × (100 – 80) = 0.5 × 5 × 20 = 50.",
+    "50", //correct answer here
+    "40",
+    "60",
+    "70",
+    "80",
+    3
+  ],
+  // Q48
+  [
+    "In a market where consumer surplus is $300 and producer surplus is $200, a new tax reduces total surplus by $100. What is the deadweight loss?",
+    "Deadweight loss equals the reduction in total surplus, which is $100.",
+    "$100", //correct answer here
+    "$50",
+    "$150",
+    "$200",
+    "$250",
+    3
+  ],
+  // Q49
+  [
+    "A firm’s total cost function is TC = 50 + 4Q + 0.5Q². At what output is average cost minimized?",
+    "AC = (50 + 4Q + 0.5Q²)/Q = 50/Q + 4 + 0.5Q. Minimizing AC by setting d(AC)/dQ = 0 yields Q = 10.",
+    "Q = 10", //correct answer here
+    "Q = 8",
+    "Q = 12",
+    "Q = 15",
+    "Q = 20",
+    3
+  ],
+  // Q50
+  [
+    "Given supply Qs = 2P – 10 and demand Qd = 100 – 3P, find the equilibrium and then compute total surplus. (Hint: First solve for equilibrium, then use CS = 0.5×(max price – equilibrium price)×Q and PS = 0.5×(equilibrium price – min price)×Q. Assume demand intercept at P = 100/3 and supply intercept when Q = 0 at P = 5.)",
+    "Set 100 – 3P = 2P – 10 → 5P = 110 → P = 22; Q = 2×22 – 10 = 34. CS = 0.5×(33.33 – 22)×34 ≈ 0.5×11.33×34 ≈ 192.6; PS = 0.5×(22 – 5)×34 = 0.5×17×34 = 289; total surplus ≈ 192.6 + 289 ≈ 481.6.",
+    "Total surplus ≈ 481.6", //correct answer here
+    "Total surplus ≈ 400",
+    "Total surplus ≈ 500",
+    "Total surplus ≈ 450",
+    "Total surplus ≈ 350",
+    3
+  ]
+];
+
+
+
+
+let array = [
+  [-1, 300], // 0
+  [-11, 290], // 100
+  [-21, 275], // 200
+  [-32, 260], // 300
+  [-42, 245], // 400
+  [-53, 230], // 500
+  [-64, 218], // 600
+  [-75, 207], // 700
+  [-83, 197], // 800
+  [-92, 188], // 900
+  [-101, 180], // 1000
+  [-112, 173], // 1100
+  [-125, 167], // 1200
+  [-133, 162], // 1300
+  [-144, 158], // 1400
+  [-152, 154], // 1500
+  [-161, 150], // 1600
+  [-175, 147], // 1700
+  [-183, 144], // 1800
+  [-215, 94], // 1900
+  [-242, 82], // 2000
+  [-275, 73], // 2100
+  [-302, 67], // 2200
+  [-321, 51], // 2300
+  [-349, 42], // 2400
+  [-381, 36], // 2500
+  [-418, 31], // 2600
+  [-427, 27], // 2700
+  [-431, 24], // 2800
+  [-434, 22], // 2900
+  [-436, 21], // 3000
+  [-437, 20], // 3100
+  [-437, 19], // 3200
+  [-437, 19], // 3300
+];
+
+
+// Global variables for Elo rating history and Chart instance
+let ratingHistory = [];
+let attemptCount = 0;
+
+// Preload 25 columns (labels 1 to 25)
+let initialLabels = Array.from({ length: 25 }, (_, i) => i + 1);
+
+// Initialize Chart.js line chart for Elo progression
+const ctx = document.getElementById("eloChart").getContext("2d");
+const eloChart = new Chart(ctx, {
+  type: "line",
+  data: {
+    labels: [], // preloaded with 25 columns
+    datasets: [
+      {
+        label: "Progression",
+        data: [],
+        fill: false,
+        borderColor: "blue",
+        tension: 0.1,
+      },
+    ],
+  },
+  options: {
+    scales: {
+      x: {
+        title: {
+          display: true,
+          text: "Questions Solved",
+        },
+      },
+      y: {
+        beginAtZero: true,
+        suggestedMax: 2300,
+        title: {
+          display: true,
+          text: "Rating",
+        },
+      },
+    },
+  },
+});
+
+setTimeout(preloadAttempts, 1000);
+function preloadAttempts() {
+  attemptCount = -1;
+  for (var i = 0; i < ratingHistory.length; i++) {
+    attemptCount++;
+    // If attemptCount exceeds the preloaded labels, expand the labels array
+    if (attemptCount > eloChart.data.labels.length) {
+      eloChart.data.labels.push(attemptCount);
+    } else {
+      // Otherwise, update the existing label (optional)
+      eloChart.data.labels[attemptCount - 1] = attemptCount - 1;
+    }
+    eloChart.data.datasets[0].data.push(ratingHistory[i]);
+    eloChart.update();
+  }
+  if (ratingHistory.length > 0) {
+    eloChart.data.datasets[0].data.pop();
+    eloChart.update();
+  }
+}
+
+// Function to add a new attempt data point and update labels if needed
+function addAttempt(progressValue) {
+  attemptCount++;
+  ratingHistory.push(progressValue);
+  // If attemptCount exceeds the preloaded labels, expand the labels array
+  if (attemptCount > eloChart.data.labels.length) {
+    eloChart.data.labels.push(attemptCount);
+  } else {
+    // Otherwise, update the existing label (optional)
+    eloChart.data.labels[attemptCount - 1] = attemptCount;
+  }
+  eloChart.data.datasets[0].data.push(progressValue);
+  eloChart.update();
+}
+
+let url = window.location.href;
+let cache = url.split("/class/")[1];
+let progress = 500;
+let notComingAgain = [];
+let problem = 2;
+let questionsSolved = -1;
+let totalProg = 500;
+let problemsCorrect = 0;
+let qs = document.getElementById("qs");
+let acc = document.getElementById("acc");
+let cr = document.getElementById("cr");
+let ar = document.getElementById("ar");
+
+const progressBar = document.getElementById("progressBar");
+const pro = document.getElementById("pro");
+progressBar.style.width = progress / 32 + "%";
+progressBar.textContent = Math.round(progress);
+
+// Initialize rating history with initial progress
+ratingHistory.push(progress);
+eloChart.data.labels.push(attemptCount);
+eloChart.data.datasets[0].data.push(progress);
+eloChart.update();
+
+loadNewQuestion();
+setInterval(progCheck, 100);
+
+function progCheck() {
+  var progres = ar.innerHTML;
+  if (progres < 1200) {
+    document.getElementById("progressBar").style.backgroundColor = "#ff2c00";
+  } else if (progres < 1800) {
+    document.getElementById("progressBar").style.backgroundColor = "#fcaf50";
+  } else if (progres < 2400) {
+    document.getElementById("progressBar").style.backgroundColor = "#4caf50";
+  } else {
+    document.getElementById("progressBar").style.backgroundColor = "#02a2ff";
+  }
+}
+
+function problemWrong() {
+  updateRating(
+    Math.round(
+      array[Math.floor(progress / 100)][0] * ratingJump
+    )
+  );
+  document.getElementById("cor").innerHTML = "Wrong!";
+  document.getElementById("problemOptions").style.display = "none";
+  document.getElementById("solutionOptions").style.display = "inline";
+  document.getElementById("solution").innerHTML = questions[problem][1];
+}
+
+function problemCorrect() {
+  if (progress < 5000) {
+    updateRating(array[Math.floor(progress / 100)][1] * ratingJump);
+  }
+  problemsCorrect++;
+  document.getElementById("cor").innerHTML = "Correct!";
+  document.getElementById("problemOptions").style.display = "none";
+  document.getElementById("solutionOptions").style.display = "inline";
+  document.getElementById("solution").innerHTML = questions[problem][1];
+}
+
+function loadNewQuestion() {
+  var ele = document.getElementsByName("gender");
+  for (var i = 0; i < ele.length; i++) {
+    ele[i].checked = false;
+  }
+  progressBar.innerHTML = parseInt(ar.innerHTML);
+  questionsSolved++;
+  problem = Math.round(progress / 100) - 1;
+  if (progress > 1800 && problem < 25) {
+    problem = 25;
+  } else if (problem > 49) {
+    problem = (problem % 25) + 24;
+  }
+  console.log(notComingAgain);
+  console.log(problem);
+  while (notComingAgain.indexOf(problem) > -1) {
+    problem++;
+  }
+  document.getElementById("problem").innerHTML = questions[problem][0];
+  document.getElementById("problemOptions").style.display = "inline";
+  document.getElementById("solutionOptions").style.display = "none";
+  document.getElementById("o1").innerHTML = questions[problem][2];
+  document.getElementById("o2").innerHTML = questions[problem][3];
+  document.getElementById("o3").innerHTML = questions[problem][4];
+  document.getElementById("o4").innerHTML = questions[problem][5];
+  document.getElementById("o5").innerHTML = questions[problem][6];
+}
+
+function gradeProblem(x) {
+  let id = ["option0", "option1", "option2", "option3", "option4"];
+  notComingAgain.push(problem);
+  if (x) {
+    if (document.getElementById(id[questions[problem][7] - 3]).checked) {
+      //They selected the correct option
+      problemCorrect();
+      totalProg += Math.max(parseInt(ar.innerHTML), progress);
+    } else {
+      //They selected the wrong option
+      problemWrong();
+      totalProg += progress / 2;
+    }
+  } else {
+    //They clicked "See Solution"
+    updateRating(
+      Math.round(
+        array[Math.floor(progress / 100)][0] * ratingJump
+      )
+    );
+    document.getElementById("cor").innerHTML = "Don't worry, you got this!";
+    document.getElementById("problemOptions").style.display = "none";
+    document.getElementById("solutionOptions").style.display = "inline";
+    document.getElementById("solution").innerHTML = questions[problem][1];
+    totalProg += progress / 2;
+  }
+  cr.innerHTML = progress;
+  ar.innerHTML = Math.round(totalProg / (attemptCount + 2));
+  acc.innerHTML =
+    Math.round((problemsCorrect * 100) / (questionsSolved + 1)) + "%";
+  qs.innerHTML = questionsSolved + 1;
+  progressBar.style.width =
+    Math.round(totalProg / (attemptCount + 2)) / 32 + "%";
+
+  if (
+    Math.round(totalProg / (attemptCount + 2)) -
+      parseInt(progressBar.innerHTML) >
+    0
+  ) {
+    progressBar.innerHTML =
+      "<strong>" +
+      Math.round(totalProg / (attemptCount + 2)) +
+      "</strong> (+" +
+      (Math.round(totalProg / (attemptCount + 2)) -
+        parseInt(progressBar.innerHTML)) +
+      ")";
+  } else {
+    progressBar.innerHTML =
+      "<strong>" +
+      Math.round(totalProg / (attemptCount + 2)) +
+      "</strong> (" +
+      (Math.round(totalProg / (attemptCount + 2)) -
+        parseInt(progressBar.innerHTML)) +
+      ")";
+  }
+
+  setTimeout(function () {
+    attemptCount++;
+    ratingHistory.push(Math.round(totalProg / (attemptCount + 1)));
+    if (attemptCount > 25) {
+      eloChart.data.labels.push(attemptCount);
+    }
+    eloChart.data.datasets[0].data.push(
+      Math.round(totalProg / (attemptCount + 1))
+    );
+    eloChart.update();
+  }, 201 * 3);
+}
+
+for (var i = 0; i < initialLabels.length; i++) {
+  eloChart.data.labels.push(initialLabels[i]);
+}
+
+// Updated updateRating function that also updates the Elo progression chart
+function updateRating(amount) {
+  let val = progress;
+  /*for (let i = 200; i >= 1; i--) {
+          setTimeout(function () {
+            val += (amount * i) / 20100;
+            progressBar.style.width = val / 32 + "%";
+            if (amount < 0) {
+              progressBar.innerHTML =
+                "<strong>" + Math.round(val) + "</strong> (" + amount + ")";
+            } else {
+              progressBar.innerHTML =
+                "<strong>" + Math.round(val) + "</strong> (+" + amount + ")";
+            }
+            if (val < 499.5) {
+              progressBar.style.backgroundColor = "#ff0000";
+            } else {
+              progressBar.style.backgroundColor = "#4caf50";
+            }
+          }, i * 3);
+        }*/
+  progress += amount;
+
+  /* After the animation, update the chart with the new rating.
+        setTimeout(function () {
+          attemptCount++;
+          ratingHistory.push(progress);
+          if (attemptCount > 25) {
+            eloChart.data.labels.push(attemptCount);
+          }
+          eloChart.data.datasets[0].data.push(progress);
+          eloChart.update();
+        }, 201 * 3);*/
+}
+// Inject CSS for the popup
+  var popupStyle = document.createElement("style");
+  popupStyle.innerHTML = `
+  .popup-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(0, 0, 0, 0.6);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 10000;
+  }
+  .popup-content {
+    background: #fff;
+    padding: 20px 30px;
+    border-radius: 10px;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+    text-align: center;
+    font-size: 1.2em;
+    max-width: 50%;
+    max-height: 75%;
+    position: relative;
+    overflow-y: scroll;
+  }
+  .close-btn {
+    position: absolute;
+    top: 10px;
+    right: 15px;
+    font-size: 20px;
+    cursor: pointer;
+    background: none;
+    border: none;
+  }
+  @keyframes fadeIn {
+    from { opacity: 0; transform: scale(0.8); }
+    to { opacity: 1; transform: scale(1); }
+  }
+`;
+  document.head.appendChild(popupStyle);
+
+  function showPopup(message) {
+    var overlay = document.createElement("div");
+    overlay.className = "popup-overlay";
+    
+    var content = document.createElement("div");
+    content.className = "popup-content";
+    content.innerHTML = message;
+    
+    var closeButton = document.createElement("button");
+    closeButton.className = "close-btn";
+    closeButton.innerHTML = "&times;";
+    closeButton.onclick = function() {
+      document.body.removeChild(overlay);
+    };
+    
+    overlay.onclick = function(event) {
+      if (event.target === overlay) {
+        document.body.removeChild(overlay);
+      }
+    };
+    
+    content.appendChild(closeButton);
+    overlay.appendChild(content);
+    document.body.appendChild(overlay);
+  }
+
+  var proficiencyShown = false;
+  var masteryShown = false;
+
+  setInterval(function () {
+    if (typeof progress !== "undefined") {
+      if (progress >= 4000 && !proficiencyShown) {
+        proficiencyShown = true;
+        showPopup(
+          "<strong>Proficiency Achieved!</strong><br>You have achieved proficiency by getting to a rating above 4000.<br>"
+        );
+      }
+      if (progress >= 5000 && !masteryShown) {
+        masteryShown = true;
+        showPopup(
+          "<strong>Mastery Achieved!</strong><br>You have achieved mastery by getting to a rating above 5000."
+        );
+      }
+    }
+  }, 500);
+
+  showPopup("<h2>Welcome to personalized Elo Practice!</h2><p>For practice units, we have a database full of questions with each problem having its own problem rating, which you can view under the stats tab. As you get problems right, you will level up your rating, when you miss problems, you lose rating. As your rating gets higher and higher, the problems become more and more difficult. Problems rated above 1800 are real AP questions taken straight from past exams, so you should have plenty of practice. <strong>Consider completed practice as either you completing 25 or more questions or getting to a rating above 1800.</strong><p>Please note progress is not saved, so if you close or refresh the tab, your progress won't be saved<br><br><i>Note: A new practice algorithm / learning app known as LearnElo is being tested here with SPEED Math & CS, so you are one of the first people to beta test this app that will see its official release soon! This app has been completely designed by hand by the same people who founded SPEED, so we hope you enjoy your practice!</i></p>"); 
+  
+    </script>
+  </body>
+</html>
