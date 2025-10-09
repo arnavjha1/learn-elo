@@ -1,0 +1,1113 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Dynamic Progress Bar</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap"
+      rel="stylesheet"
+    />
+    <!-- Include Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <style>
+      /* Global Styles */
+      body {
+        margin: 0;
+        padding: 0;
+        font-family: "Roboto", sans-serif;
+        background: linear-gradient(135deg, #83a4d4, #b6fbff);
+        color: #333;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        min-height: 100vh;
+      }
+      .container {
+        overflow-y: scroll;
+        position: fixed;
+        top: 20px;
+        bottom: 20px;
+        background: #fff;
+        max-width: 800px;
+        width: 90%;
+        padding: 30px;
+        border-radius: 15px;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+      }
+      /* Chart Styles */
+      #eloChart {
+        margin-bottom: 20px;
+      }
+      /* Progress Bar Styles */
+      .progress-container {
+        width: 100%;
+        background-color: #e0e0e0;
+        border-radius: 25px;
+        overflow: hidden;
+        margin-bottom: 20px;
+      }
+      .progress-bar {
+        width: 0;
+        height: 30px;
+        text-align: center;
+        line-height: 30px;
+        color: white;
+        transition: width 1s ease;
+      }
+      #progressBar {
+        background-color: #ff2c00;
+        transition: width 1s ease, background-color 1.5s ease;
+      }
+      /* Content Styles */
+      h1 {
+        font-size: 2em;
+        margin-bottom: 10px;
+        text-align: center;
+      }
+      h2 {
+        text-align: center;
+      }
+      h4 {
+        font-weight: 500;
+      }
+      .question,
+      .option,
+      .solution {
+        margin-bottom: 15px;
+      }
+      .option input[type="radio"] {
+        margin-right: 10px;
+      }
+      button {
+        background-color: #4caf50;
+        color: #fff;
+        border: none;
+        padding: 10px 20px;
+        font-size: 1em;
+        border-radius: 5px;
+        cursor: pointer;
+        margin-right: 10px;
+        transition: background-color 0.3s ease;
+      }
+      button:hover {
+        background-color: #43a047;
+      }
+      /* Visibility Settings */
+      #problemOptions {
+        display: block;
+      }
+      #solutionOptions {
+        display: none;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <!-- Progress Bar -->
+      <div class="progress-container" id="pro">
+        <div class="progress-bar" id="progressBar">0%</div>
+      </div>
+      <h1>Unit 1 Practice</h1>
+      <div class="question">
+        <h4>
+          <span id="problem">Issue loading question (check console)</span>
+        </h4>
+      </div>
+      <div class="option">
+        <input type="radio" name="gender" id="option0" /><span id="o1"></span
+        ><br />
+        <input type="radio" name="gender" id="option1" /><span id="o2"></span
+        ><br />
+        <input type="radio" name="gender" id="option2" /><span id="o3"></span
+        ><br />
+        <input type="radio" name="gender" id="option3" /><span id="o4"></span
+        ><br />
+        <input type="radio" name="gender" id="option4" /><span id="o5"></span
+        ><br />
+      </div>
+      <div id="problemOptions">
+        <button onclick="gradeProblem(true)">Submit</button>
+        <button onclick="gradeProblem(false)">See Solution</button>
+      </div>
+      <div id="solutionOptions">
+        <strong><span id="cor">Wrong!</span> This is the solution:</strong
+        ><br />
+        <span id="solution"></span><br /><br />
+        <button onclick="loadNewQuestion()">Continue</button>
+      </div>
+      <!-- Elo Progression Chart -->
+      <canvas id="eloChart" width="800" height="200"></canvas>
+      <h4>Stats</h4>
+      <ul>
+        <li>Questions Solved: <c id="qs">0</c></li>
+        <li>Problem Rating: <c id="cr">500</c></li>
+        <li>Accuracy: <c id="acc">N/A</c></li>
+        <li>Actual Rating: <c id="ar">500</c></li>
+      </ul>
+    </div>
+  <script>
+    const ratingJump = 1;
+    const questions = [
+  // Q1 (Digital Information)
+  [
+    "What is the smallest unit of digital information?",
+    "A bit, short for binary digit, is the most basic unit and can be either a 0 or a 1.",
+    "Byte",
+    "Bit", // Correct Answer
+    "Kilobyte",
+    "Pixel",
+    "Megabyte",
+    4
+  ],
+  // Q2 (Computer Systems and Networks)
+  [
+    "Which of the following is a set of rules that governs the exchange of data between devices?",
+    "A protocol is an established set of rules that determine how data is transmitted between different devices in the same network.",
+    "Algorithm",
+    "Bandwidth",
+    "Protocol", // Correct Answer
+    "Packet",
+    "Firewall",
+    5
+  ],
+  // Q3 (Computer Systems and Networks)
+  [
+    "What is the primary function of the Domain Name System (DNS)?",
+    "DNS acts as the phonebook of the Internet, translating human-readable names like 'google.com' to a machine-readable IP address.",
+    "To encrypt data for secure transmission.",
+    "To translate human-readable website names into machine-readable IP addresses.", // Correct Answer
+    "To determine the fastest route for data packets to travel.",
+    "To store and manage large databases of user information.",
+    "To compress website images.",
+    4
+  ],
+  // Q4 (Algorithms and Programming)
+  [
+    "A step-by-step procedure for solving a problem is known as a(n)...",
+    "An algorithm is a precisely defined sequence of instructions designed to solve a specific problem.",
+    "Heuristic",
+    "Protocol",
+    "Abstraction",
+    "Algorithm", // Correct Answer
+    "Parameter",
+    6
+  ],
+  // Q5 (Digital Information)
+  [
+    "Which of these number systems is base-2?",
+    "The binary system is base-2, using only the digits 0 and 1, which corresponds to the on/off states of a computer's transistors.",
+    "Decimal",
+    "Hexadecimal",
+    "Binary", // Correct Answer
+    "Octal",
+    "Roman",
+    5
+  ],
+  // Q6 (Creative Development)
+  [
+    "What does 'collaboration' in computer science primarily emphasize?",
+    "Collaboration leverages diverse perspectives and skills to improve the final product by working as a team.",
+    "Working individually to write code faster.",
+    "Using the most advanced programming language.",
+    "Partnering with others to create a better computational artifact.", // Correct Answer
+    "Ensuring that a program has no errors on the first try.",
+    "Memorizing common algorithms.",
+    5
+  ],
+  // Q7 (Creative Development)
+  [
+    "When designing a program, what is the purpose of identifying the requirements?",
+    "Identifying requirements is the crucial first step to ensure the final program solves the intended problem for the user.",
+    "To choose the color scheme for the user interface.",
+    "To understand the problem, user expectations, and what the program needs to do.", // Correct Answer
+    "To write the code as quickly as possible.",
+    "To debug the program before it is written.",
+    "To select the best hardware to run the program on.",
+    4
+  ],
+  // Q8 (Program Design and Development)
+  [
+    "What is the process of finding and fixing errors in a program called?",
+    "Debugging involves identifying, locating, and correcting errors or 'bugs' in code.",
+    "Compiling",
+    "Executing",
+    "Debugging", // Correct Answer
+    "Deploying",
+    "Commenting",
+    5
+  ],
+  // Q9 (Impact of Computing)
+  [
+    "Which of the following describes the gap between those with and without access to computing technology?",
+    "This term specifically refers to the societal gap in access to and use of information and communication technology.",
+    "The Digital Footprint",
+    "The Digital Divide", // Correct Answer
+    "Net Neutrality",
+    "Cybersecurity",
+    "The Information Age",
+    4
+  ],
+  // Q10 (Digital Information)
+  [
+    "What is the decimal equivalent of the binary number 1101?",
+    "The calculation is (1 * 2^3) + (1 * 2^2) + (0 * 2^1) + (1 * 2^0) = 8 + 4 + 0 + 1 = 13.",
+    "11",
+    "13", // Correct Answer
+    "14",
+    "15",
+    "9",
+    4
+  ],
+  // Q11 (Digital Information)
+  [
+    "A programmer is using an image file in their program. To reduce the file size, they use a compression algorithm that permanently discards some of the image data. What type of compression is this?",
+    "Lossy compression reduces file size by eliminating some information, which is irreversible.",
+    "Lossless",
+    "Lossy", // Correct Answer
+    "Encrypted",
+    "Decentralized",
+    "Sequential",
+    4
+  ],
+  // Q12 (Algorithms and Programming)
+  [
+    "Which term describes the process of reducing complexity by hiding irrelevant details to focus on the essential characteristics?",
+    "Abstraction is key to managing complexity in computer science, used in everything from programming languages to user interfaces.",
+    "Decomposition",
+    "Pattern Recognition",
+    "Abstraction", // Correct Answer
+    "Iteration",
+    "Selection",
+    5
+  ],
+  // Q13 (Creative Development)
+  [
+    "A team is developing an app. They create a simple, non-functional version to show the user interface and flow. What is this preliminary model called?",
+    "A prototype is an early model of a product built to test a concept or process, similar to an architect's model.",
+    "Final Product",
+    "Source Code",
+    "Prototype", // Correct Answer
+    "Compiler",
+    "Debugger",
+    5
+  ],
+  // Q14 (Impact of Computing)
+  [
+    "An attempt to trick a user into revealing sensitive information by impersonating a trustworthy entity in an electronic communication is called what?",
+    "Phishing attacks often use deceptive emails or websites to fool people into giving up personal information.",
+    "A DDoS attack",
+    "A virus",
+    "Phishing", // Correct Answer
+    "Encryption",
+    "A firewall",
+    5
+  ],
+  // Q15 (Digital Information)
+  [
+    "If you use 4 bits to represent positive integers in binary, what is the largest number you can represent?",
+    "With 4 bits, the largest binary number is 1111, which equals 8 + 4 + 2 + 1 = 15. The formula is 2^n - 1.",
+    "8",
+    "15", // Correct Answer
+    "16",
+    "7",
+    "4",
+    4
+  ],
+  // Q16 (Algorithms and Programming)
+  [
+    "Consider the following algorithm: 1. Set 'count' to 0. 2. Set 'total' to 1. 3. While 'count' is less than 5: 4. Multiply 'total' by 2. 5. Add 1 to 'count'. 6. Display 'total'. What value will be displayed?",
+    "The loop runs 5 times (for count = 0, 1, 2, 3, 4). So, 'total' becomes 1*2=2, 2*2=4, 4*2=8, 8*2=16, 16*2=32.",
+    "16",
+    "32", // Correct Answer
+    "64",
+    "10",
+    "5",
+    4
+  ],
+  // Q17 (Algorithms and Programming)
+  [
+    "A programmer needs to store a list of student names. Which of the following is the most appropriate data abstraction to use?",
+    "A list is a data structure designed to hold an ordered collection of items, such as names.",
+    "A single integer variable",
+    "A boolean variable",
+    "A list (or array)", // Correct Answer
+    "A single string variable",
+    "A constant",
+    5
+  ],
+  // Q18 (Impact of Computing)
+  [
+    "The principle of Net Neutrality advocates for what?",
+    "This is the core principle: preventing ISPs from blocking, slowing down, or charging more for specific content or services.",
+    "Internet access should be free for everyone.",
+    "Internet Service Providers (ISPs) must treat all data on the internet equally, without discrimination.", // Correct Answer
+    "All websites must use a neutral, unbiased tone.",
+    "Individuals should remain neutral and anonymous online.",
+    "All data must be encrypted by the government.",
+    4
+  ],
+  // Q19 (Program Design and Development)
+  [
+    "You are debugging a program that is supposed to calculate the average of three numbers. The code is: `average = num1 + num2 + num3 / 3`. For the numbers 3, 3, and 6, the program outputs 8 instead of 4. What is the error?",
+    "Due to the order of operations, the division happens first. The sum of the three numbers must be calculated before dividing. Parentheses are needed: `(num1 + num2 + num3) / 3`.",
+    "The division should be performed before the addition.",
+    "The order of operations is incorrect; addition should be performed first.", // Correct Answer
+    "The variables are of the wrong data type.",
+    "The program should use multiplication instead of division.",
+    "There is a syntax error.",
+    4
+  ],
+  // Q20 (Impact of Computing)
+  [
+    "Why is intellectual property a concern in computing?",
+    "The ease of replication on the internet creates challenges for protecting creations like software, music, and art.",
+    "Because computer programs cannot be copyrighted.",
+    "Because digital information is easy to copy and distribute, making it difficult to protect ownership and rights.", // Correct Answer
+    "Because only physical inventions can be patented, not software ideas.",
+    "Because all software is required to be open-source.",
+    "Because hardware is more valuable than software.",
+    4
+  ],
+  // Q21 (Digital Information)
+  [
+    "Which of the following describes a benefit of using hexadecimal (base-16) numbers in computing?",
+    "A single hexadecimal digit can represent four binary digits (e.g., 'F' for '1111'), making it a much more compact and human-readable representation of binary data.",
+    "They are easier for humans to read and write than long binary strings.", // Correct Answer
+    "Computers can process hexadecimal numbers much faster than binary numbers.",
+    "Hexadecimal numbers can represent fractions, while binary cannot.",
+    "They use fewer digits than the decimal system to represent the same number.",
+    "They are required for all modern encryption.",
+    3
+  ],
+  // Q22 (Algorithms and Programming)
+  [
+    "A programmer creates a procedure (or function) called `calculateArea` that takes the length and width of a rectangle as input and returns the area. This is an example of what computational thinking practice?",
+    "By creating a procedure, the programmer is hiding the details of the area calculation (length * width) inside a simple, reusable block.",
+    "Data collection",
+    "Debugging",
+    "Abstraction", // Correct Answer
+    "Performance analysis",
+    "Iteration",
+    5
+  ],
+  // Q23 (Algorithms and Programming)
+  [
+    "What is the result of the boolean expression `(true AND false) OR (true AND true)`?",
+    "`true AND false` is `false`. `true AND true` is `true`. So the expression becomes `false OR true`, which evaluates to `true`.",
+    "true", // Correct Answer
+    "false",
+    "It will cause an error.",
+    "It is neither true nor false.",
+    "It depends on the programming language.",
+    3
+  ],
+  // Q24 (Computer Systems and Networks)
+  [
+    "How does the Internet Protocol (IP) handle routing messages?",
+    "IP is responsible for addressing and routing packets, which may take different paths to reach the same destination. This is known as packet switching.",
+    "It establishes a single, continuous connection between the sender and receiver.",
+    "It breaks messages into packets and routes them independently across a network.", // Correct Answer
+    "It encrypts all messages and sends them through a single, secure server.",
+    "It broadcasts every message to every device on the internet.",
+    "It relies on physical mail to deliver the addresses.",
+    4
+  ],
+  // Q25 (Algorithms and Programming)
+  [
+    "A programmer is writing code to check if a user is old enough to vote (age 18 or older). Which of the following is the most appropriate control structure?",
+    "An if-else structure is perfect for checking a condition (age >= 18) and performing different actions based on the outcome.",
+    "A loop that repeats 18 times.",
+    "A selection statement (if-else).", // Correct Answer
+    "A procedure that calculates the user's age.",
+    "A list to store all possible ages.",
+    "An event handler.",
+    4
+  ],
+  // Q26 (Algorithms and Programming)
+  [
+    "What does it mean for an algorithm to be 'scalable'?",
+    "Scalability is about how well an algorithm's performance holds up as the problem size increases.",
+    "The algorithm can be understood by anyone, regardless of their programming skill.",
+    "The algorithm can efficiently handle a growing amount of input or work.", // Correct Answer
+    "The algorithm is written in a programming language that is easy to scale up on a screen.",
+    "The algorithm solves a problem in the fewest number of steps possible.",
+    "The algorithm uses less than 1 kilobyte of memory.",
+    4
+  ],
+  // Q27 (Digital Information)
+  [
+    "A digital audio file is sampled at a higher rate. What is the most likely effect on the file?",
+    "A higher sampling rate means taking more 'snapshots' of the sound wave per second, which increases both fidelity and data storage requirements.",
+    "The file size will decrease and the quality will improve.",
+    "The file size will increase and the quality will be a more faithful representation of the original sound.", // Correct Answer
+    "The file size will remain the same, but the quality will decrease.",
+    "The file will be converted from stereo to mono.",
+    "The audio will play at a faster speed.",
+    4
+  ],
+  // Q28 (Digital Information)
+  [
+    "Which of the following is an example of metadata?",
+    "This is data *about* the message, not the message content itself, which is the definition of metadata.",
+    "The text of an email message.",
+    "The pixels that make up a digital photograph.",
+    "The time a text message was sent.", // Correct Answer
+    "The audio content of a song file.",
+    "The words written in a document.",
+    5
+  ],
+  // Q29 (Creative Development)
+  [
+    "When developing a new piece of software, which of the following is a benefit of an iterative development process?",
+    "Iterative development involves cycles of building, testing, and refining, which is ideal for incorporating feedback and adapting to changing requirements.",
+    "It guarantees the final product will have no bugs.",
+    "It allows for feedback and changes to be incorporated throughout the process.", // Correct Answer
+    "It requires all planning to be completed and finalized before any coding begins.",
+    "It is always faster and cheaper than any other method.",
+    "It can only be used by individual programmers, not teams.",
+    4
+  ],
+  // Q30 (Impact of Computing)
+  [
+    "Why is data encryption important for internet communication?",
+    "Encryption scrambles data into a format that can only be read by someone with the correct key, ensuring confidentiality and protecting it from eavesdroppers.",
+    "It increases the speed of data transfer.",
+    "It prevents unauthorized users from reading private information.", // Correct Answer
+    "It reduces the size of data packets.",
+    "It guarantees that data will arrive at its destination.",
+    "It helps websites load faster.",
+    4
+  ],
+  // Q31 (Algorithms and Programming)
+  [
+    "A programmer is writing an algorithm to search for a name in a large, sorted list of names. Which search algorithm would typically be more efficient?",
+    "Binary search is significantly more efficient for sorted lists because it eliminates half of the remaining items with each comparison.",
+    "Linear search, because it is simpler to implement.",
+    "Binary search, because it repeatedly divides the search interval in half.", // Correct Answer
+    "Both would be equally efficient.",
+    "A random search, because it could find the item on the first try.",
+    "Sequential search, because it checks items in order.",
+    4
+  ],
+  // Q32 (Algorithms and Programming)
+  [
+    "What is a primary difference between a high-level and a low-level programming language?",
+    "High-level languages (like Python or JavaScript) handle many details automatically, are closer to human language, and are more abstracted from the hardware.",
+    "High-level languages are harder for humans to read and write.",
+    "Low-level languages provide more abstraction from the computer's hardware.",
+    "High-level languages are more abstracted from the hardware and are generally easier to use.", // Correct Answer
+    "Low-level languages cannot be used to create complex programs.",
+    "High-level languages run faster than low-level languages.",
+    5
+  ],
+  // Q33 (Digital Information)
+  [
+    "What is an 'overflow error' in the context of binary numbers?",
+    "An overflow error occurs when a calculation produces a result that is too large to fit in the number of bits allocated to store it, like an odometer rolling over.",
+    "When a computer runs out of memory to store variables.",
+    "When the result of a calculation is too large to be represented by the number of bits allocated.", // Correct Answer
+    "When a number is divided by zero.",
+    "When a binary number contains a digit other than 0 or 1.",
+    "When a network connection 'overflows' with too much data.",
+    4
+  ],
+  // Q34 (Impact of Computing)
+  [
+    "Which of the following describes a 'Distributed Denial of Service' (DDoS) attack?",
+    "The 'distributed' part means the attack comes from many sources at once, overwhelming a target server with traffic to make it unavailable.",
+    "A single computer sends a malicious file to a server to steal data.",
+    "An attacker uses many computers to flood a server with requests, making it unavailable to legitimate users.", // Correct Answer
+    "An attacker gains unauthorized access to a distributed database.",
+    "A program that is distributed to many users and secretly records their keystrokes.",
+    "A type of computer virus that deletes files.",
+    4
+  ],
+  // Q35 (Algorithms and Programming)
+  [
+    "A programmer is developing a model to simulate traffic flow in a city. They simplify the model by representing cars as simple dots and roads as lines, ignoring details like car color and driver behavior. This simplification is an example of what?",
+    "The entire system is a simulation, and the process of simplifying complex real-world objects into manageable representations is a form of abstraction.",
+    "An algorithm",
+    "A heuristic",
+    "A simulation and a model (abstraction)", // Correct Answer
+    "A bug",
+    "A DDoS attack",
+    5
+  ],
+  // Q36 (Digital Information)
+  [
+    "If an image is represented using 8-bit color, and a programmer wants to increase the number of possible colors, which of the following would be the most effective change?",
+    "Increasing the number of bits per pixel (color depth) exponentially increases the number of representable colors (from 2^8 to 2^16).",
+    "Increase the resolution of the image.",
+    "Change the color depth to 16-bit.", // Correct Answer
+    "Apply lossless compression to the image.",
+    "Convert the image to grayscale.",
+    "Increase the image's brightness.",
+    4
+  ],
+  // Q37 (Creative Development)
+  [
+    "A student team is building a mobile app. One member writes a part of the program that works perfectly on their own but causes errors when integrated with the other parts. What is the most likely cause of this issue?",
+    "This is a classic collaboration problem. Interfaces and assumptions between different code modules must be clearly defined to avoid integration errors.",
+    "The student used the wrong programming language.",
+    "The team did not agree on how their different code segments would interact (e.g., function names, data formats).", // Correct Answer
+    "The student's computer has a hardware fault.",
+    "The app's user interface is poorly designed.",
+    "The compiler has a bug.",
+    4
+  ],
+  // Q38 (Algorithms and Programming)
+  [
+    "Consider two algorithms for sorting a list. Algorithm A is more efficient in the worst-case scenario than Algorithm B. However, Algorithm B is simpler and is often faster for small, nearly sorted lists. Which algorithm should a programmer choose?",
+    "The best choice involves trade-offs. The decision depends on the expected data and program goals; if the program will usually deal with small, nearly sorted lists, the simplicity and average-case speed of B might be preferable.",
+    "Always choose Algorithm A because it has better worst-case efficiency.",
+    "It depends on the expected input and the specific requirements of the program.", // Correct Answer
+    "Always choose Algorithm B because it is simpler.",
+    "Neither, a new algorithm should be developed from scratch.",
+    "The one that is written with fewer lines of code.",
+    4
+  ],
+  // Q39 (Impact of Computing)
+  [
+    "A website uses an algorithm to recommend articles to users based on their reading history. A user complains that they are only ever shown articles that confirm their existing biases. This is an example of what potential negative impact of computing?",
+    "This describes a situation where a computer system creates unfair outcomes or reinforces existing beliefs by creating a 'filter bubble'. The algorithm is biased based on the data it was trained on.",
+    "A software bug",
+    "Algorithmic bias", // Correct Answer
+    "A security vulnerability",
+    "A data overflow error",
+    "Poor user interface design.",
+    4
+  ],
+  // Q40 (Computer Systems and Networks)
+  [
+    "What is the primary role of the Transmission Control Protocol (TCP) in the internet protocol suite?",
+    "TCP works with IP to make sure all packets of a message arrive, are in the correct order, and are not corrupted, providing reliable communication.",
+    "To assign IP addresses to devices on a network.",
+    "To ensure reliable, ordered, and error-checked delivery of packets.", // Correct Answer
+    "To convert domain names into IP addresses.",
+    "To define the format of web pages using hypertext.",
+    "To route packets to their destination.",
+    4
+  ],
+  // Q41 (Program Design and Development)
+  [
+    "A programmer wants to write a procedure that swaps the values of two variables, `a` and `b`. Consider the following incorrect attempt:\n\n1. `a = b`\n2. `b = a`\n\nWhy does this fail?",
+    "Once `a` is overwritten with `b`'s value in the first step, the original value of `a` is gone. A third, temporary variable is needed to hold it.",
+    "The second step should be `b = b`.",
+    "After the first step, the original value of `a` is lost, so both variables end up with the original value of `b`.", // Correct Answer
+    "Computers are not capable of swapping variable values.",
+    "The variables must be declared as constants.",
+    "This causes an overflow error.",
+    4
+  ],
+  // Q42 (Impact of Computing)
+  [
+    "Which of the following innovations was made possible by the ability to digitally represent and transmit information?",
+    "Streaming relies on compressing, packetizing, and transmitting vast amounts of digital data over the internet, which is a fundamentally digital process.",
+    "The printing press",
+    "Streaming video services", // Correct Answer
+    "The telephone",
+    "The public library system",
+    "The radio",
+    4
+  ],
+  // Q43 (Impact of Computing)
+  [
+    "A citizen's social media posts are analyzed by a program to determine their eligibility for a loan. Which of the following is a significant ethical concern?",
+    "Using data not directly related to financial behavior can introduce bias based on non-relevant factors (like social circles or opinions) and lead to discriminatory outcomes.",
+    "The efficiency of the data analysis algorithm.",
+    "The potential for the program to make biased or unfair decisions based on correlations that are not causally related to creditworthiness.", // Correct Answer
+    "The amount of data storage required for the social media posts.",
+    "The choice of programming language used to write the analysis program.",
+    "The speed of the server running the program.",
+    4
+  ],
+  // Q44 (Creative Development)
+  [
+    "What is the purpose of using comments in a program if they are ignored by the compiler or interpreter?",
+    "Comments are crucial for documentation. They are meant for human readers to make code easier to understand, maintain, and debug.",
+    "To slow down the program for debugging purposes.",
+    "To provide explanations to human readers about how the code works.", // Correct Answer
+    "To hide parts of the code from other programmers.",
+    "To add hidden features or 'Easter eggs' to the program.",
+    "To increase the final file size of the application.",
+    4
+  ],
+  // Q45 (Computer Systems and Networks)
+  [
+    "Which statement best describes the relationship between the World Wide Web and the Internet?",
+    "The Internet is the global network infrastructure (hardware and protocols), while the Web is a system of interlinked hypertext documents that runs on top of the Internet.",
+    "They are two different names for the same thing.",
+    "The World Wide Web is one of the many services that runs on the Internet.", // Correct Answer
+    "The Internet is a part of the World Wide Web.",
+    "The World Wide Web is the hardware, and the Internet is the software.",
+    "The Internet is for email and the Web is for websites.",
+    4
+  ],
+  // Q46 (Algorithms and Programming)
+  [
+    "A programmer designs an algorithm that replaces every occurrence of the word 'apple' with 'orange', and then replaces every occurrence of 'orange' with 'apple'. If the starting text is 'an apple and an orange', what is the result?",
+    "First, 'apple' becomes 'orange', resulting in 'an orange and an orange'. The second step then finds all 'orange's (both the original one and the new one) and changes them to 'apple'. The final result is 'an apple and an apple'.",
+    "an orange and an apple",
+    "an apple and an orange",
+    "an apple and an apple", // Correct Answer
+    "an orange and an orange",
+    "This will result in an error.",
+    5
+  ],
+  // Q47 (Digital Information)
+  [
+    "The ASCII standard uses 7 bits to represent characters. The Unicode standard can use up to 32 bits per character. What is the primary advantage of Unicode over ASCII?",
+    "ASCII is limited to 128 characters (mostly for English), while Unicode can represent over a million characters, covering almost all the world's writing systems and emojis.",
+    "Unicode files are always smaller than ASCII files.",
+    "Unicode can represent a much larger variety of characters, including those from many different languages.", // Correct Answer
+    "Unicode is a more effective method for data compression.",
+    "Unicode is easier for computers to process than ASCII.",
+    "Unicode was invented more recently.",
+    4
+  ],
+  // Q48 (Algorithms and Programming)
+  [
+    "A program contains a list of numbers: `[10, 20, 30, 40, 50]`. What would be the output of an algorithm that displays the sum of the element at index 1 and the element at index 3? (Assume indexing starts at 0).",
+    "Indexing starts at 0, so the element at index 1 is 20. The element at index 3 is 40. Their sum is 20 + 40 = 60.",
+    "30",
+    "50",
+    "60", // Correct Answer
+    "70",
+    "An error, because the list is too small.",
+    5
+  ],
+  // Q49 (Impact of Computing)
+  [
+    "A company's server is breached, and customer passwords are stolen. The company reports that the passwords were 'hashed'. What does this mean for security?",
+    "Hashing is a one-way function that transforms data into a unique string. It protects the original password because it is extremely difficult to reverse. Attackers would have the hashes, not the actual passwords.",
+    "It means the passwords were stored in plain text and are easily readable by the attackers.",
+    "It means the passwords were converted into a unique, fixed-size string of characters. It is difficult to reverse this process to find the original password.", // Correct Answer
+    "It means the passwords were backed up on a separate, secure server.",
+    "It means the passwords were compressed to save storage space.",
+    "It means the passwords were encrypted and can be easily decrypted.",
+    4
+  ],
+  // Q50 (Algorithms and Programming)
+  [
+    "Which of these best describes a 'heuristic' approach to problem-solving?",
+    "Heuristics are 'rules of thumb' used to find a good-enough solution when a perfect or optimal solution is impractical or impossible to find in a reasonable amount of time.",
+    "An approach that is guaranteed to find the single, optimal solution to a problem.",
+    "An approach that provides a practical, 'good enough' solution, especially when finding a perfect solution is too difficult or slow.", // Correct Answer
+    "An approach that involves trying every possible solution until the correct one is found.",
+    "An approach that involves breaking a problem down into smaller, identical sub-problems.",
+    "An approach that always follows the same set of steps in the same order.",
+    4
+  ]
+];
+
+let array = [
+  [-1, 300], // 0
+  [-11, 290], // 100
+  [-21, 275], // 200
+  [-32, 260], // 300
+  [-42, 245], // 400
+  [-53, 230], // 500
+  [-64, 218], // 600
+  [-75, 207], // 700
+  [-83, 197], // 800
+  [-92, 188], // 900
+  [-101, 180], // 1000
+  [-112, 173], // 1100
+  [-125, 167], // 1200
+  [-133, 162], // 1300
+  [-144, 158], // 1400
+  [-152, 154], // 1500
+  [-161, 150], // 1600
+  [-175, 147], // 1700
+  [-183, 144], // 1800
+  [-215, 94], // 1900
+  [-242, 82], // 2000
+  [-275, 73], // 2100
+  [-302, 67], // 2200
+  [-321, 51], // 2300
+  [-349, 42], // 2400
+  [-381, 36], // 2500
+  [-418, 31], // 2600
+  [-427, 27], // 2700
+  [-431, 24], // 2800
+  [-434, 22], // 2900
+  [-436, 21], // 3000
+  [-437, 20], // 3100
+  [-437, 19], // 3200
+  [-437, 19], // 3300
+];
+
+
+// Global variables for Elo rating history and Chart instance
+let ratingHistory = [];
+let attemptCount = 0;
+
+// Preload 25 columns (labels 1 to 25)
+let initialLabels = Array.from({ length: 25 }, (_, i) => i + 1);
+
+// Initialize Chart.js line chart for Elo progression
+const ctx = document.getElementById("eloChart").getContext("2d");
+const eloChart = new Chart(ctx, {
+  type: "line",
+  data: {
+    labels: [], // preloaded with 25 columns
+    datasets: [
+      {
+        label: "Progression",
+        data: [],
+        fill: false,
+        borderColor: "blue",
+        tension: 0.1,
+      },
+    ],
+  },
+  options: {
+    scales: {
+      x: {
+        title: {
+          display: true,
+          text: "Questions Solved",
+        },
+      },
+      y: {
+        beginAtZero: true,
+        suggestedMax: 2300,
+        title: {
+          display: true,
+          text: "Rating",
+        },
+      },
+    },
+  },
+});
+
+setTimeout(preloadAttempts, 1000);
+function preloadAttempts() {
+  attemptCount = -1;
+  for (var i = 0; i < ratingHistory.length; i++) {
+    attemptCount++;
+    // If attemptCount exceeds the preloaded labels, expand the labels array
+    if (attemptCount > eloChart.data.labels.length) {
+      eloChart.data.labels.push(attemptCount);
+    } else {
+      // Otherwise, update the existing label (optional)
+      eloChart.data.labels[attemptCount - 1] = attemptCount - 1;
+    }
+    eloChart.data.datasets[0].data.push(ratingHistory[i]);
+    eloChart.update();
+  }
+  if (ratingHistory.length > 0) {
+    eloChart.data.datasets[0].data.pop();
+    eloChart.update();
+  }
+}
+
+// Function to add a new attempt data point and update labels if needed
+function addAttempt(progressValue) {
+  attemptCount++;
+  ratingHistory.push(progressValue);
+  // If attemptCount exceeds the preloaded labels, expand the labels array
+  if (attemptCount > eloChart.data.labels.length) {
+    eloChart.data.labels.push(attemptCount);
+  } else {
+    // Otherwise, update the existing label (optional)
+    eloChart.data.labels[attemptCount - 1] = attemptCount;
+  }
+  eloChart.data.datasets[0].data.push(progressValue);
+  eloChart.update();
+}
+
+let url = window.location.href;
+let cache = url.split("/class/")[1];
+let progress = 500;
+let notComingAgain = [];
+let problem = 2;
+let questionsSolved = -1;
+let totalProg = 500;
+let problemsCorrect = 0;
+let qs = document.getElementById("qs");
+let acc = document.getElementById("acc");
+let cr = document.getElementById("cr");
+let ar = document.getElementById("ar");
+
+const progressBar = document.getElementById("progressBar");
+const pro = document.getElementById("pro");
+progressBar.style.width = progress / 32 + "%";
+progressBar.textContent = Math.round(progress);
+
+// Initialize rating history with initial progress
+ratingHistory.push(progress);
+eloChart.data.labels.push(attemptCount);
+eloChart.data.datasets[0].data.push(progress);
+eloChart.update();
+
+loadNewQuestion();
+setInterval(progCheck, 100);
+
+function progCheck() {
+  var progres = ar.innerHTML;
+  if (progres < 1200) {
+    document.getElementById("progressBar").style.backgroundColor = "#ff2c00";
+  } else if (progres < 1800) {
+    document.getElementById("progressBar").style.backgroundColor = "#fcaf50";
+  } else if (progres < 2400) {
+    document.getElementById("progressBar").style.backgroundColor = "#4caf50";
+  } else {
+    document.getElementById("progressBar").style.backgroundColor = "#02a2ff";
+  }
+}
+
+function problemWrong() {
+  updateRating(
+    Math.round(
+      array[Math.floor(progress / 100)][0] * ratingJump
+    )
+  );
+  document.getElementById("cor").innerHTML = "Wrong!";
+  document.getElementById("problemOptions").style.display = "none";
+  document.getElementById("solutionOptions").style.display = "inline";
+  document.getElementById("solution").innerHTML = questions[problem][1];
+}
+
+function problemCorrect() {
+  if (progress < 5000) {
+    updateRating(array[Math.floor(progress / 100)][1] * ratingJump);
+  }
+  problemsCorrect++;
+  document.getElementById("cor").innerHTML = "Correct!";
+  document.getElementById("problemOptions").style.display = "none";
+  document.getElementById("solutionOptions").style.display = "inline";
+  document.getElementById("solution").innerHTML = questions[problem][1];
+}
+
+function loadNewQuestion() {
+  var ele = document.getElementsByName("gender");
+  for (var i = 0; i < ele.length; i++) {
+    ele[i].checked = false;
+  }
+  progressBar.innerHTML = parseInt(ar.innerHTML);
+  questionsSolved++;
+  problem = Math.round(progress / 100) - 1;
+  if (progress > 1800 && problem < 25) {
+    problem = 25;
+  } else if (problem > 49) {
+    problem = (problem % 25) + 24;
+  }
+  console.log(notComingAgain);
+  console.log(problem);
+  while (notComingAgain.indexOf(problem) > -1) {
+    problem++;
+  }
+  document.getElementById("problem").innerHTML = questions[problem][0];
+  document.getElementById("problemOptions").style.display = "inline";
+  document.getElementById("solutionOptions").style.display = "none";
+  document.getElementById("o1").innerHTML = questions[problem][2];
+  document.getElementById("o2").innerHTML = questions[problem][3];
+  document.getElementById("o3").innerHTML = questions[problem][4];
+  document.getElementById("o4").innerHTML = questions[problem][5];
+  document.getElementById("o5").innerHTML = questions[problem][6];
+}
+
+function gradeProblem(x) {
+  let id = ["option0", "option1", "option2", "option3", "option4"];
+  notComingAgain.push(problem);
+  if (x) {
+    if (document.getElementById(id[questions[problem][7] - 3]).checked) {
+      //They selected the correct option
+      problemCorrect();
+      totalProg += Math.max(parseInt(ar.innerHTML), progress);
+    } else {
+      //They selected the wrong option
+      problemWrong();
+      totalProg += progress / 2;
+    }
+  } else {
+    //They clicked "See Solution"
+    updateRating(
+      Math.round(
+        array[Math.floor(progress / 100)][0] * ratingJump
+      )
+    );
+    document.getElementById("cor").innerHTML = "Don't worry, you got this!";
+    document.getElementById("problemOptions").style.display = "none";
+    document.getElementById("solutionOptions").style.display = "inline";
+    document.getElementById("solution").innerHTML = questions[problem][1];
+    totalProg += progress / 2;
+  }
+  cr.innerHTML = progress;
+  ar.innerHTML = Math.round(totalProg / (attemptCount + 2));
+  acc.innerHTML =
+    Math.round((problemsCorrect * 100) / (questionsSolved + 1)) + "%";
+  qs.innerHTML = questionsSolved + 1;
+  progressBar.style.width =
+    Math.round(totalProg / (attemptCount + 2)) / 32 + "%";
+
+  if (
+    Math.round(totalProg / (attemptCount + 2)) -
+      parseInt(progressBar.innerHTML) >
+    0
+  ) {
+    progressBar.innerHTML =
+      "<strong>" +
+      Math.round(totalProg / (attemptCount + 2)) +
+      "</strong> (+" +
+      (Math.round(totalProg / (attemptCount + 2)) -
+        parseInt(progressBar.innerHTML)) +
+      ")";
+  } else {
+    progressBar.innerHTML =
+      "<strong>" +
+      Math.round(totalProg / (attemptCount + 2)) +
+      "</strong> (" +
+      (Math.round(totalProg / (attemptCount + 2)) -
+        parseInt(progressBar.innerHTML)) +
+      ")";
+  }
+
+  setTimeout(function () {
+    attemptCount++;
+    ratingHistory.push(Math.round(totalProg / (attemptCount + 1)));
+    if (attemptCount > 25) {
+      eloChart.data.labels.push(attemptCount);
+    }
+    eloChart.data.datasets[0].data.push(
+      Math.round(totalProg / (attemptCount + 1))
+    );
+    eloChart.update();
+  }, 201 * 3);
+}
+
+for (var i = 0; i < initialLabels.length; i++) {
+  eloChart.data.labels.push(initialLabels[i]);
+}
+
+// Updated updateRating function that also updates the Elo progression chart
+function updateRating(amount) {
+  let val = progress;
+  /*for (let i = 200; i >= 1; i--) {
+          setTimeout(function () {
+            val += (amount * i) / 20100;
+            progressBar.style.width = val / 32 + "%";
+            if (amount < 0) {
+              progressBar.innerHTML =
+                "<strong>" + Math.round(val) + "</strong> (" + amount + ")";
+            } else {
+              progressBar.innerHTML =
+                "<strong>" + Math.round(val) + "</strong> (+" + amount + ")";
+            }
+            if (val < 499.5) {
+              progressBar.style.backgroundColor = "#ff0000";
+            } else {
+              progressBar.style.backgroundColor = "#4caf50";
+            }
+          }, i * 3);
+        }*/
+  progress += amount;
+
+  /* After the animation, update the chart with the new rating.
+        setTimeout(function () {
+          attemptCount++;
+          ratingHistory.push(progress);
+          if (attemptCount > 25) {
+            eloChart.data.labels.push(attemptCount);
+          }
+          eloChart.data.datasets[0].data.push(progress);
+          eloChart.update();
+        }, 201 * 3);*/
+}
+// Inject CSS for the popup
+  var popupStyle = document.createElement("style");
+  popupStyle.innerHTML = `
+  .popup-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(0, 0, 0, 0.6);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 10000;
+  }
+  .popup-content {
+    background: #fff;
+    padding: 20px 30px;
+    border-radius: 10px;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+    text-align: center;
+    font-size: 1.2em;
+    max-width: 50%;
+    max-height: 75%;
+    position: relative;
+    overflow-y: scroll;
+  }
+  .close-btn {
+    position: absolute;
+    top: 10px;
+    right: 15px;
+    font-size: 20px;
+    cursor: pointer;
+    background: none;
+    border: none;
+  }
+  @keyframes fadeIn {
+    from { opacity: 0; transform: scale(0.8); }
+    to { opacity: 1; transform: scale(1); }
+  }
+`;
+  document.head.appendChild(popupStyle);
+
+  function showPopup(message) {
+    var overlay = document.createElement("div");
+    overlay.className = "popup-overlay";
+    
+    var content = document.createElement("div");
+    content.className = "popup-content";
+    content.innerHTML = message;
+    
+    var closeButton = document.createElement("button");
+    closeButton.className = "close-btn";
+    closeButton.innerHTML = "&times;";
+    closeButton.onclick = function() {
+      document.body.removeChild(overlay);
+    };
+    
+    overlay.onclick = function(event) {
+      if (event.target === overlay) {
+        document.body.removeChild(overlay);
+      }
+    };
+    
+    content.appendChild(closeButton);
+    overlay.appendChild(content);
+    document.body.appendChild(overlay);
+  }
+
+  var proficiencyShown = false;
+  var masteryShown = false;
+
+  setInterval(function () {
+    if (typeof progress !== "undefined") {
+      if (progress >= 4000 && !proficiencyShown) {
+        proficiencyShown = true;
+        showPopup(
+          "<strong>Proficiency Achieved!</strong><br>You have achieved proficiency by getting to a rating above 4000.<br>"
+        );
+      }
+      if (progress >= 5000 && !masteryShown) {
+        masteryShown = true;
+        showPopup(
+          "<strong>Mastery Achieved!</strong><br>You have achieved mastery by getting to a rating above 5000."
+        );
+      }
+    }
+  }, 500);
+
+  showPopup('<h3>Tutorial - How to Use Elo Practice</h3><iframe width="560" height="315" src="https://www.youtube.com/embed/VYgirFHLwrM?si=h47XOI1EQchj7d-z" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe><br><p>For practice units, we have a database full of questions with each problem having its own problem rating, which you can view under the stats tab. As you get problems right, you will level up your rating, when you miss problems, you lose rating. As your rating gets higher and higher, the problems become more and more difficult. Problems rated above 1800 are real AP questions taken straight from past exams, so you should have plenty of practice. <strong>Consider completed practice as either you completing 25 or more questions or getting to a rating above 1800.</strong><br><br><i>Note: Progress is not saved when you close or refresh the tab</i>'); 
+    </script>
+    </body>
+</html>
