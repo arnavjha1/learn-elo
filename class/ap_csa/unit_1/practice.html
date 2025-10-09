@@ -1,0 +1,1174 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Dynamic Progress Bar</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap"
+      rel="stylesheet"
+    />
+    <!-- Include Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <style>
+      /* Global Styles */
+      body {
+        margin: 0;
+        padding: 0;
+        font-family: "Roboto", sans-serif;
+        background: linear-gradient(135deg, #83a4d4, #b6fbff);
+        color: #333;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        min-height: 100vh;
+      }
+      .container {
+        overflow-y: scroll;
+        position: fixed;
+        top: 20px;
+        bottom: 20px;
+        background: #fff;
+        max-width: 800px;
+        width: 90%;
+        padding: 30px;
+        border-radius: 15px;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+      }
+      /* Chart Styles */
+      #eloChart {
+        margin-bottom: 20px;
+      }
+      /* Progress Bar Styles */
+      .progress-container {
+        width: 100%;
+        background-color: #e0e0e0;
+        border-radius: 25px;
+        overflow: hidden;
+        margin-bottom: 20px;
+      }
+      .progress-bar {
+        width: 0;
+        height: 30px;
+        text-align: center;
+        line-height: 30px;
+        color: white;
+        transition: width 1s ease;
+      }
+      #progressBar {
+        background-color: #ff2c00;
+        transition: width 1s ease, background-color 1.5s ease;
+      }
+      /* Content Styles */
+      h1 {
+        font-size: 2em;
+        margin-bottom: 10px;
+        text-align: center;
+      }
+      h2 {
+        text-align: center;
+      }
+      h4 {
+        font-weight: 500;
+      }
+      .question,
+      .option,
+      .solution {
+        margin-bottom: 15px;
+      }
+      .option input[type="radio"] {
+        margin-right: 10px;
+      }
+      button {
+        background-color: #4caf50;
+        color: #fff;
+        border: none;
+        padding: 10px 20px;
+        font-size: 1em;
+        border-radius: 5px;
+        cursor: pointer;
+        margin-right: 10px;
+        transition: background-color 0.3s ease;
+      }
+      button:hover {
+        background-color: #43a047;
+      }
+      /* Visibility Settings */
+      #problemOptions {
+        display: block;
+      }
+      #solutionOptions {
+        display: none;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <!-- Progress Bar -->
+      <div class="progress-container" id="pro">
+        <div class="progress-bar" id="progressBar">0%</div>
+      </div>
+      <h1>Unit 2 Practice</h1>
+      <div class="question">
+        <h4>
+          <span id="problem">Issue loading question (check console)</span>
+        </h4>
+      </div>
+      <div class="option">
+        <input type="radio" name="gender" id="option0" /><span id="o1"></span
+        ><br />
+        <input type="radio" name="gender" id="option1" /><span id="o2"></span
+        ><br />
+        <input type="radio" name="gender" id="option2" /><span id="o3"></span
+        ><br />
+        <input type="radio" name="gender" id="option3" /><span id="o4"></span
+        ><br />
+        <input type="radio" name="gender" id="option4" /><span id="o5"></span
+        ><br />
+      </div>
+      <div id="problemOptions">
+        <button onclick="gradeProblem(true)">Submit</button>
+        <button onclick="gradeProblem(false)">See Solution</button>
+      </div>
+      <div id="solutionOptions">
+        <strong><span id="cor">Wrong!</span> This is the solution:</strong
+        ><br />
+        <span id="solution"></span><br /><br />
+        <button onclick="loadNewQuestion()">Continue</button>
+      </div>
+      <!-- Elo Progression Chart -->
+      <canvas id="eloChart" width="800" height="200"></canvas>
+      <h4>Stats</h4>
+      <ul>
+        <li>Questions Solved: <c id="qs">0</c></li>
+        <li>Problem Rating: <c id="cr">500</c></li>
+        <li>Accuracy: <c id="acc">N/A</c></li>
+        <li>Actual Rating: <c id="ar">500</c></li>
+      </ul>
+    </div>
+  <script>
+    const ratingJump = 1;
+    const questions = [
+  /***** 1.1 — Intro to Java & the main method (Q1–Q7) *****/
+  // Q1
+  [
+    "How do you declare the main method in a Java program?",
+    "The JVM looks for the exact signature with modifiers and parameter: public static void main(String[] args). 'public' lets the JVM access it, 'static' allows it to be called without creating an object, 'void' is the return type, and String[] args receives command-line arguments.",
+    "public static void main()",
+    "public void main(String[] args)",
+    "public static void main(String[] args)",
+    "static public void main()",
+    "public static int main(String[] args)",
+    3,
+    true
+  ],
+  // Q2
+  [
+    "If a Java source file contains the declaration 'public class HelloWorld', what must the filename be?",
+    "A public top-level class must be placed in a file with the exact same name plus the .java extension, so the filename must be HelloWorld.java. Otherwise the compiler reports an error.",
+    "HelloWorld.java",
+    "helloWorld.java",
+    "HelloWorld.class",
+    "Main.java",
+    "Hello.java",
+    1,
+    true
+  ],
+  // Q3
+  [
+    "Which set of modifiers/return type is required so the JVM recognizes the entry point?",
+    "The JVM requires 'public' accessibility and 'static' so it can call main without instantiating the class; the return type must be 'void'. So the required trio is 'public static void'.",
+    "public static void",
+    "public void",
+    "static void",
+    "private static void",
+    "public final void",
+    1,
+    true,
+  ],
+  // Q4
+  [
+    "Which method prints text without adding a newline at the end?",
+    "System.out.print(...) prints text but does not append a newline. System.out.println(...) appends a newline. printf formats and may or may not append a newline depending on format string.",
+    "System.out.println(\"...\")",
+    "System.out.printf(\"...\")",
+    "System.out.print(\"...\")",
+    "System.out.write(...)",
+    "System.out.echo(...)",
+    3,
+    true
+  ],
+  // Q5
+  [
+    "What does this code print?\nSystem.out.print(\"A\");\nSystem.out.println(\"B\");\nSystem.out.print(\"C\");",
+    "Execution order: print(\"A\") writes 'A' without newline, println(\"B\") writes 'B' then a newline, then print(\"C\") writes 'C' after that newline. So the output is two lines: first line 'AB', second line 'C'.",
+    "AB then newline then C (i.e. first line \"AB\", second line \"C\")",
+    "ABC on a single line",
+    "A then newline then BC",
+    "A B C with spaces between letters",
+    "A\nB\nC (three lines)",
+    1,
+    false
+  ],
+  // Q6
+  [
+    "What is the purpose of the 'String[] args' parameter in main?",
+    "String[] args receives command-line arguments passed to the program when it is launched. The array holds each argument as a String; if none are supplied it is an empty array (not null).",
+    "It holds arguments passed from the command line to the program.",
+    "It is required but always empty and unused.",
+    "It stores environment variables.",
+    "It is used to return a status code to the OS.",
+    "It must contain program configuration in JSON form.",
+    1,
+    false
+  ],
+  // Q7
+  [
+    "Which of these class files will compile successfully as-is (assume filename matches public class)?\nA: public class Example { public static void main(String[] args) { System.out.println(\"Hi\"); } }\nB: class Example { public static void main(String[] args) { } }\nC: public class Example { public void main(String[] args) { } }\nChoose the answer that lists valid, compilable declarations.",
+    "A: valid (public class with correct main). B: valid too (main can be in a non-public class). C: invalid because the main method is missing 'static' so the JVM can't call it; it compiles but won't be the JVM entry point. The only guaranteed correct programmatic entries are A and B compiling; C compiles but doesn't provide JVM entry signature. The question asked which will compile successfully as-is: A and B will; C also compiles but the method isn't the conventional entrypoint. For clarity: A and B compile and can be run; C compiles but won't be used as the JVM entry method.",
+    "Only A",
+    "A and B",
+    "A and C",
+    "B and C",
+    "All A, B, and C",
+    2,
+    false
+  ],
+
+  /***** 1.2 — Variables & Data Types (Q8–Q15) *****/
+  // Q8
+  [
+    "Which of the following is NOT a primitive type in Java?",
+    "Java primitives are byte, short, int, long, float, double, char, boolean. String is a reference type (class). So String is not a primitive.",
+    "int",
+    "double",
+    "boolean",
+    "char",
+    "String",
+    5,
+    false
+  ],
+  // Q9
+  [
+    "Which line correctly declares an integer variable named count initialized to 5?",
+    "Declaration syntax: <type> <name> = <value>; So 'int count = 5;' is correct.",
+    "int count = 5;",
+    "int 5 = count;",
+    "count := 5;",
+    "integer count = 5;",
+    "var count = 5;",
+    1,
+    true
+  ],
+  // Q10
+  [
+    "What is the default value of a boolean instance field in a Java class if not explicitly initialized?",
+    "Instance fields of primitive types have default values: numeric types 0 (or 0.0), boolean defaults to false, and object references default to null. So boolean defaults to false.",
+    "true",
+    "false",
+    "null",
+    "0",
+    "\"\" (empty string)",
+    2,
+    false
+  ],
+  // Q11
+  [
+    "Which type is appropriate to store a single character (like 'A')?",
+    "Single characters are stored in the primitive type char. String stores sequences of characters (possibly length 1 as well) but char is the single-character primitive.",
+    "String",
+    "char",
+    "Character[]",
+    "int",
+    "char[]",
+    2,
+    true
+  ],
+  // Q12
+  [
+    "Which literal denotes a double (64-bit floating point) in Java?",
+    "By default, a decimal literal with a decimal point is a double (e.g., 3.14). To make a float, you append 'f' or 'F' (e.g., 3.14f).",
+    "3.14",
+    "3.14f",
+    "3",
+    "\"3.14\"",
+    "314",
+    1,
+    true
+  ],
+  // Q13
+  [
+    "What will System.out.println(s); print if you declare 'String s = null;' and then run that print statement?",
+    "If a String reference variable holds null and you pass it to println, Java prints the four letters 'null' (the string \"null\"), because println checks for null and prints that textual representation.",
+    "It throws a NullPointerException",
+    "It prints an empty line",
+    "It prints the text 'null'",
+    "It prints \"\" (empty string)",
+    "It prints the word 'NULL' in uppercase",
+    3,
+    false
+  ],
+  // Q14
+  [
+    "Which of the following declarations will cause a compile-time error?",
+    "Declaring an int using a floating literal without a cast is illegal: 'int x = 3.7;' causes a compile error because 3.7 is a double and cannot be assigned to int without explicit cast.",
+    "double x = 3.7;",
+    "int x = 3.7;",
+    "int x = (int)3.7;",
+    "long l = 100L;",
+    "float f = 3.7f;",
+    2,
+    true
+  ],
+  // Q15
+  [
+    "What is printed by this code?\nint a = 2;\nint b = a++;\nSystem.out.println(a + \",\" + b);",
+    "Evaluation: b = a++ uses post-increment so b gets 2, then a becomes 3. The printed values are a=3 and b=2, so the output is '3,2'.",
+    "2,2",
+    "3,2",
+    "2,3",
+    "3,3",
+    "Compilation error",
+    2,
+    false
+  ],
+
+  /***** 1.3 — Arithmetic & Operator Precedence (Q16–Q20) *****/
+  // Q16
+  [
+    "What is the result of the following code?\nint x = 5;\nx = x + 2 * 3;\nSystem.out.println(x);",
+    "Operator precedence: multiplication happens before addition. 2*3 = 6, so x = 5 + 6 = 11. The program prints 11.",
+    "10",
+    "11",
+    "21",
+    "16",
+    "8",
+    2,
+    false
+  ],
+  // Q17
+  [
+    "What does this print?\ndouble avg = (5 + 10 + 15) / 3;\nSystem.out.println(avg);",
+    "The expression (5+10+15)/3 uses only int literals so integer division occurs first: (30)/3 = 10 (an int). Assigning to double converts it to 10.0. So it prints 10.0.",
+    "10",
+    "10.0",
+    "10.333333333333334",
+    "0",
+    "Compilation error",
+    2,
+    false
+  ],
+  // Q18
+  [
+    "What is the value of the expression 17 % 5 in Java?",
+    "The remainder operator % gives the remainder after integer division: 17 / 5 = 3 remainder 2, so 17 % 5 equals 2.",
+    "1",
+    "2",
+    "3",
+    "4",
+    "0",
+    2,
+    false
+  ],
+  // Q19
+  [
+    "Given int a = 4; a *= 3 + 1; what is the final value of a?",
+    "Operator precedence: the right-hand side 3+1 is evaluated first (4). Then 'a *= 4' is equivalent to 'a = a * 4'; with original a = 4, the result is 16.",
+    "8",
+    "12",
+    "16",
+    "20",
+    "4",
+    3,
+    false
+  ],
+  // Q20
+  [
+    "What is printed by this snippet?\nint a = 5;\nint b = a++;\nint c = ++a;\nSystem.out.println(a + \",\" + b + \",\" + c);",
+    "Step-by-step: start a=5. b = a++ assigns b=5, then a becomes 6. c = ++a pre-increments a to 7, then assigns c=7. Final a=7, b=5, c=7, so output is '7,5,7'.",
+    "6,5,6",
+    "7,5,7",
+    "5,6,7",
+    "7,6,5",
+    "Compilation error",
+    2,
+    false
+  ],
+
+  /***** 1.4 — String Basics (Q21–Q30) *****/
+  // Q21
+  [
+    "Given String s = \"Hello\"; which method call returns the number of characters in s?",
+    "The length() method on a String returns the number of characters. For \"Hello\", s.length() returns 5.",
+    "s.size()",
+    "s.length()",
+    "s.count()",
+    "s.length",
+    "s.lengthOf()",
+    2,
+    true
+  ],
+  // Q22
+  [
+    "If String s = \"AP Computer Science\" what does s.substring(0,2) return?",
+    "substring(start, end) returns characters from index start (inclusive) to end (exclusive). Indices 0 and 1 are 'A' and 'P', so substring(0,2) returns \"AP\".",
+    "\"A\"",
+    "\"AP\"",
+    "\"AP \" (with trailing space)",
+    "\"AP Computer\"",
+    "\"P\"",
+    2,
+    true
+  ],
+  // Q23
+  [
+    "What does s.indexOf('z') return when 'z' is not found in s?",
+    "indexOf returns -1 when the character or substring is not present in the string, which is the conventional 'not found' sentinel in Java.",
+    "0",
+    "-1",
+    "NullPointerException",
+    "It throws an exception",
+    "length of s",
+    2,
+    true
+  ],
+  // Q24
+  [
+    "Which is the correct way to compare two String objects for equal text content?",
+    "The == operator compares object references; to compare the sequence of characters you must use s1.equals(s2). So equals is correct.",
+    "s1 == s2",
+    "s1.equals(s2)",
+    "s1.compareTo(s2) == -1",
+    "s1.compare(s2)",
+    "Objects.equals(s1, s2) is invalid",,
+    true
+  ],
+  // Q25
+  [
+    "Which Java string literal produces the output Hello, \"world\"! when printed?",
+    "To include double quotes inside a string literal, escape them with backslashes. The literal is \"Hello, \\\"world\\\"!\".",
+    "\"Hello, \"world\"!\"",
+    "\"Hello, \\\"world\\\"!\"",
+    "\"Hello, \\world\\!\"",
+    "\"Hello, \\nworld\\n!\"",
+    "\"Hello, world!\"",
+    2,
+    true
+  ],
+  // Q26
+  [
+    "What is printed by System.out.println(\"1\" + 2 + 3); ?",
+    "String concatenation left-to-right: \"1\" + 2 -> \"12\"; then \"12\" + 3 -> \"123\". So the printed output is the string \"123\".",
+    "6",
+    "123",
+    "15",
+    "1 2 3",
+    "12 3",
+    2,
+    true
+  ],
+  // Q27
+  [
+    "Given String s = \"Hello\" what does s.charAt(2) return?",
+    "charAt uses zero-based indexing: index 0='H', 1='e', 2='l'. So s.charAt(2) returns the character 'l'.",
+    "'H'",
+    "'e'",
+    "'l'",
+    "'o'",
+    "An exception",
+    3,
+    true
+  ],
+  // Q28
+  [
+    "Which call converts a string s to uppercase?",
+    "The String method toUpperCase() returns a new string where all letters are uppercase. Example: s.toUpperCase().",
+    "s.upper()",
+    "s.toUpperCase()",
+    "s.uppercase()",
+    "s.makeUpper()",
+    "s.toUpper",
+    2,
+    true
+  ],
+  // Q29
+  [
+    "What does s.replace(\"a\", \"b\") do?",
+    "replace(oldCharSequence, newCharSequence) returns a new String where every occurrence of the first sequence is replaced by the second. So all 'a' become 'b'.",
+    "Modifies s in place, changing 'a' to 'b'",
+    "Returns a new string with all 'a' replaced by 'b'",
+    "Removes all 'a' characters",
+    "Replaces first 'a' only",
+    "Throws an exception if 'a' not found",
+    2,
+    false
+  ],
+  // Q30
+  [
+    "Given String email = \"student@example.com\"; which expression returns the domain part (\"example.com\")?",
+    "Find the position of '@' with indexOf and take substring from one after it: email.substring(email.indexOf('@') + 1) returns the domain.",
+    "email.substring(0, email.indexOf('@'))",
+    "email.substring(email.indexOf('@') + 1)",
+    "email.split(\".\")[1]",
+    "email.substring(email.indexOf('.') + 1)",
+    "email.replace(\"@\",\".\")",
+    2,
+    true
+  ],
+
+  /***** 1.5 — Type Casting & Mixed-Type Expressions (Q31–Q35) *****/
+  // Q31
+  [
+    "What are the outputs of:\nint a = 7;\nint b = 2;\nSystem.out.println(a / b);\nSystem.out.println((double)a / b);",
+    "First expression uses integer division: 7/2 = 3 (int). Assigning or printing that prints 3. The second casts a to double making floating-point division: 7.0/2 = 3.5, so it prints 3.5.",
+    "3 and 3",
+    "3 and 3.5",
+    "3.5 and 3",
+    "3.5 and 3.5",
+    "Compilation error",
+    2,
+    false
+  ],
+  // Q32
+  [
+    "Which expression correctly converts Fahrenheit F to Celsius C (with decimal precision)?",
+    "Use the formula C = (F - 32) * 5.0 / 9. Using 5.0 (a double) ensures floating-point division instead of integer division.",
+    "double C = (F - 32) * 5 / 9;",
+    "double C = (F - 32) * 5.0 / 9;",
+    "double C = (F - 32) * (5/9);",
+    "double C = F * 9/5 + 32;",
+    "double C = (F - 32) / 1.8;",
+    2,
+    true
+  ],
+  // Q33
+  [
+    "What type is the result of dividing a double by an int in Java (e.g., 7.0 / 2)?",
+    "When any operand is a double, Java promotes the other operand to double and performs floating-point division. So 7.0/2 yields a double (3.5).",
+    "int",
+    "double",
+    "float",
+    "long",
+    "Compilation error",
+    2,
+    true
+  ],
+  // Q34
+  [
+    "What happens if you cast a double 9.8 to int with (int)9.8?",
+    "Casting from double to int truncates the fractional part (no rounding); (int)9.8 yields 9.",
+    "It rounds to 10",
+    "It becomes 9",
+    "It becomes 9.0",
+    "It throws an exception",
+    "It becomes 0",
+    2,
+    false
+  ],
+  // Q35
+  [
+    "If int x = 10; double y = 3.5; what is the result of x / y?",
+    "x is promoted to double (10.0) and floating-point division occurs: 10.0 / 3.5 = 2.857142857142857 (approx). The result is a double.",
+    "2 (int)",
+    "2.857142857142857 (double)",
+    "3 (rounded)",
+    "Compilation error: mixing types",
+    "0",
+    2,
+    false
+  ],
+
+  /***** 1.6 — Constants and the final keyword (Q36–Q40) *****/
+  // Q36
+  [
+    "How do you declare a constant for pi that cannot be changed in Java?",
+    "Use the final modifier (optionally static if shared by the class). Example: final double PI = 3.14159; If shared across instances you often use 'public static final double PI = 3.14159;'.",
+    "double PI = 3.14159;",
+    "final double PI = 3.14159;",
+    "const double PI = 3.14159;",
+    "static double PI = 3.14159;",
+    "readonly double PI = 3.14159;",
+    2,
+    true
+  ],
+  // Q37
+  [
+    "What happens if you try to assign a new value to a final variable after it has been initialized?",
+    "A final variable cannot be reassigned after initialization; attempting to do so causes a compile-time error (e.g., 'cannot assign a value to final variable').",
+    "It changes the value at runtime",
+    "The compiler gives an error",
+    "It throws an exception at runtime",
+    "It silently ignores the assignment",
+    "It makes a copy and assigns to the copy",
+    2,
+    false
+  ],
+  // Q38
+  [
+    "Which naming style is the Java convention for constants?",
+    "Constants are typically named in all uppercase with underscores between words, e.g., MAX_SIZE or PI_VALUE.",
+    "camelCase",
+    "PascalCase",
+    "ALL_CAPS_WITH_UNDERSCORES",
+    "lowercase",
+    "kebab-case",
+    3,
+    false
+  ],
+  // Q39
+  [
+    "If you declare 'final int[] arr = {1,2,3};' can you modify arr[0] = 5 later in code?",
+    "final makes the reference arr unchangeable (you cannot reassign arr to a different array), but you can change the contents of the array. So arr[0] = 5 is allowed.",
+    "No — arr contents are frozen and cannot be changed",
+    "Yes — you can change arr[0], but you cannot reassign arr itself",
+    "Only if arr is static",
+    "Only if arr is declared volatile",
+    "Only with reflection",
+    2,
+    false
+  ],
+  // Q40
+  [
+    "Why would you use 'public static final' for a constant in a class?",
+    "static makes the constant part of the class (shared by all instances), final prevents reassignment, and public makes it accessible to other classes. This is the typical pattern for globally accessible constants.",
+    "To allow each instance to have its own constant value",
+    "To declare a mutable class-wide variable",
+    "To declare an unchangeable class-level constant accessible without creating an object",
+    "To declare a constant that can be changed at runtime",
+    "It has no different effect than final alone",
+    3,
+    false
+  ],
+
+  /***** 1.7 — Input with Scanner (Q41–Q50) *****/
+  // Q41
+  [
+    "Which import statement is required to use java.util.Scanner?",
+    "Scanner lives in the java.util package, so you must import it with: import java.util.Scanner; (or use the fully qualified name).",
+    "import java.io.Scanner;",
+    "import java.util.Scanner;",
+    "import util.Scanner;",
+    "import Scanner;",
+    "No import is required",
+    2,
+    false
+  ],
+  // Q42
+  [
+    "Which Scanner method reads the next token as an int?",
+    "scanner.nextInt() reads the next token from input, parses it as an int and returns it. If the token isn't an integer, Scanner throws InputMismatchException.",
+    "next()",
+    "nextLine()",
+    "nextInt()",
+    "nextInteger()",
+    "readInt()",
+    3,
+    true
+  ],
+  // Q43
+  [
+    "After calling sc.nextInt(), a subsequent sc.nextLine() returns an empty string. How do you correctly read the remainder of that line after nextInt?",
+    "nextInt() leaves the rest of the line (including the newline) in the buffer. To read the following full line you should call an extra sc.nextLine() to consume the leftover newline, then call another sc.nextLine() for the intended input.",
+    "Use next() instead of nextLine() always",
+    "Call an extra sc.nextLine() to consume the leftover newline, then call sc.nextLine() for the real input",
+    "Switch to BufferedReader to avoid the problem",
+    "Call sc.skip() before nextLine()",
+    "You cannot mix nextInt and nextLine",
+    2,
+    false
+  ],
+  // Q44
+  [
+    "What is the difference between sc.next() and sc.nextLine()?",
+    "sc.next() returns the next whitespace-delimited token (no spaces), while sc.nextLine() returns the rest of the current line, including spaces, up to the line terminator.",
+    "next() reads an entire line; nextLine() reads a single word",
+    "next() reads the next token (word); nextLine() reads the remainder of the line (possibly containing spaces)",
+    "next() reads a character; nextLine() reads a byte",
+    "They are identical",
+    "next() returns null at EOF; nextLine() throws EOFException",
+    2,
+    false
+  ],
+  // Q45
+  [
+    "Given this code reads two integers (user types '2 3' and presses Enter):\nScanner sc = new Scanner(System.in);\nint a = sc.nextInt();\nint b = sc.nextInt();\nSystem.out.println(a + b);\nWhat is printed?",
+    "nextInt reads tokens separated by whitespace. If the user types '2 3', a becomes 2 and b becomes 3. The program prints their sum: 5.",
+    "23",
+    "5",
+    "2 3",
+    "Compilation error",
+    "It waits for more input",
+    2,
+    false
+  ],
+  // Q46
+  [
+    "How do you properly release resources used by a Scanner reading System.in when you're done?",
+    "Call sc.close() to close the Scanner. Note: closing a Scanner that wraps System.in will close System.in; be careful if other code needs it afterward.",
+    "sc.finish();",
+    "sc.free();",
+    "sc.close();",
+    "System.closeScanner(sc);",
+    "No action needed",
+    3,
+    true
+  ],
+  // Q47
+  [
+    "You call sc.nextDouble(); then sc.nextLine(), but nextLine() returns an empty string. Why and how to fix it?",
+    "Similar to nextInt, nextDouble leaves the line terminator in the buffer. To get a meaningful line after nextDouble call sc.nextLine() once to consume the leftover newline, then call sc.nextLine() again to get the user's line.",
+    "Use next() instead of nextLine() to read the double",
+    "Call sc.nextLine() once to consume the leftover newline, then call sc.nextLine() again for the actual line",
+    "Wrap Scanner in BufferedReader",
+    "Use sc.skipLine();",
+    "This cannot happen with nextDouble",
+    2,
+    false
+  ],
+  // Q48
+  [
+    "What exception does Scanner.nextInt() throw if the next token is not parseable as an int?",
+    "Scanner.nextInt() throws java.util.InputMismatchException when the next token cannot be parsed as the requested primitive type.",
+    "NoSuchElementException",
+    "InputMismatchException",
+    "NumberFormatException",
+    "IllegalArgumentException",
+    "NullPointerException",
+    2,
+    true
+  ],
+  // Q49
+  [
+    "How can you read a single character from a Scanner sc?",
+    "Scanner has no nextChar(); read the next token as a String with sc.next() and then take its first character with charAt(0): char c = sc.next().charAt(0);",
+    "sc.nextChar()",
+    "sc.readChar()",
+    "char c = sc.next().charAt(0);",
+    "char c = (char)sc.nextInt();",
+    "Use sc.nextLine().charAt(1);",
+    3,
+    true
+  ],
+  // Q50
+  [
+    "Which code snippet correctly reads a first and last name separately and prints initials (e.g., input 'Ada Lovelace' -> output 'A.L.')?",
+    "Correct approach: read tokens (first and last) with sc.next(), get first char of each with charAt(0), and print with a dot between. Example:\nScanner sc = new Scanner(System.in);\nString first = sc.next();\nString last = sc.next();\nSystem.out.println(first.charAt(0) + \".\" + last.charAt(0) + \".\");\nsc.close();",
+    "String first = sc.nextLine(); String last = sc.nextLine(); System.out.println(first.charAt(1)+\".\"+last.charAt(1)+\".\");",
+    "String first = sc.next(); String last = sc.next(); System.out.println(first.charAt(0) + \".\" + last.charAt(0) + \".\");",
+    "String[] names = sc.nextLine().split(\" \"); System.out.println(names[0].charAt(1)+\".\"+names[1].charAt(1)+\".\");",
+    "char a = sc.nextChar(); char b = sc.nextChar(); System.out.println(a+\".\"+b+\".\");",
+    "System.out.println(sc.next().charAt(0)+\".\"+sc.next().charAt(0)+\".\");",
+    2,
+    true
+  ]
+];
+let array = [
+  [-1, 300], // 0
+  [-11, 290], // 100
+  [-21, 275], // 200
+  [-32, 260], // 300
+  [-42, 245], // 400
+  [-53, 230], // 500
+  [-64, 218], // 600
+  [-75, 207], // 700
+  [-83, 197], // 800
+  [-92, 188], // 900
+  [-101, 180], // 1000
+  [-112, 173], // 1100
+  [-125, 167], // 1200
+  [-133, 162], // 1300
+  [-144, 158], // 1400
+  [-152, 154], // 1500
+  [-161, 150], // 1600
+  [-175, 147], // 1700
+  [-183, 144], // 1800
+  [-215, 94], // 1900
+  [-242, 82], // 2000
+  [-275, 73], // 2100
+  [-302, 67], // 2200
+  [-321, 51], // 2300
+  [-349, 42], // 2400
+  [-381, 36], // 2500
+  [-418, 31], // 2600
+  [-427, 27], // 2700
+  [-431, 24], // 2800
+  [-434, 22], // 2900
+  [-436, 21], // 3000
+  [-437, 20], // 3100
+  [-437, 19], // 3200
+  [-437, 19], // 3300
+];
+
+
+// Global variables for Elo rating history and Chart instance
+let ratingHistory = [];
+let attemptCount = 0;
+
+// Preload 25 columns (labels 1 to 25)
+let initialLabels = Array.from({ length: 25 }, (_, i) => i + 1);
+
+// Initialize Chart.js line chart for Elo progression
+const ctx = document.getElementById("eloChart").getContext("2d");
+const eloChart = new Chart(ctx, {
+  type: "line",
+  data: {
+    labels: [], // preloaded with 25 columns
+    datasets: [
+      {
+        label: "Progression",
+        data: [],
+        fill: false,
+        borderColor: "blue",
+        tension: 0.1,
+      },
+    ],
+  },
+  options: {
+    scales: {
+      x: {
+        title: {
+          display: true,
+          text: "Questions Solved",
+        },
+      },
+      y: {
+        beginAtZero: true,
+        suggestedMax: 2300,
+        title: {
+          display: true,
+          text: "Rating",
+        },
+      },
+    },
+  },
+});
+
+setTimeout(preloadAttempts, 1000);
+function preloadAttempts() {
+  attemptCount = -1;
+  for (var i = 0; i < ratingHistory.length; i++) {
+    attemptCount++;
+    // If attemptCount exceeds the preloaded labels, expand the labels array
+    if (attemptCount > eloChart.data.labels.length) {
+      eloChart.data.labels.push(attemptCount);
+    } else {
+      // Otherwise, update the existing label (optional)
+      eloChart.data.labels[attemptCount - 1] = attemptCount - 1;
+    }
+    eloChart.data.datasets[0].data.push(ratingHistory[i]);
+    eloChart.update();
+  }
+  if (ratingHistory.length > 0) {
+    eloChart.data.datasets[0].data.pop();
+    eloChart.update();
+  }
+}
+
+// Function to add a new attempt data point and update labels if needed
+function addAttempt(progressValue) {
+  attemptCount++;
+  ratingHistory.push(progressValue);
+  // If attemptCount exceeds the preloaded labels, expand the labels array
+  if (attemptCount > eloChart.data.labels.length) {
+    eloChart.data.labels.push(attemptCount);
+  } else {
+    // Otherwise, update the existing label (optional)
+    eloChart.data.labels[attemptCount - 1] = attemptCount;
+  }
+  eloChart.data.datasets[0].data.push(progressValue);
+  eloChart.update();
+}
+
+let url = window.location.href;
+let cache = url.split("/class/")[1];
+let progress = 500;
+let notComingAgain = [];
+let problem = 2;
+let questionsSolved = -1;
+let totalProg = 500;
+let problemsCorrect = 0;
+let qs = document.getElementById("qs");
+let acc = document.getElementById("acc");
+let cr = document.getElementById("cr");
+let ar = document.getElementById("ar");
+
+const progressBar = document.getElementById("progressBar");
+const pro = document.getElementById("pro");
+progressBar.style.width = progress / 32 + "%";
+progressBar.textContent = Math.round(progress);
+
+// Initialize rating history with initial progress
+ratingHistory.push(progress);
+eloChart.data.labels.push(attemptCount);
+eloChart.data.datasets[0].data.push(progress);
+eloChart.update();
+
+loadNewQuestion();
+setInterval(progCheck, 100);
+
+function progCheck() {
+  var progres = ar.innerHTML;
+  if (progres < 1200) {
+    document.getElementById("progressBar").style.backgroundColor = "#ff2c00";
+  } else if (progres < 1800) {
+    document.getElementById("progressBar").style.backgroundColor = "#fcaf50";
+  } else if (progres < 2400) {
+    document.getElementById("progressBar").style.backgroundColor = "#4caf50";
+  } else {
+    document.getElementById("progressBar").style.backgroundColor = "#02a2ff";
+  }
+}
+
+function problemWrong() {
+  updateRating(
+    Math.round(
+      array[Math.floor(progress / 100)][0] * ratingJump
+    )
+  );
+  document.getElementById("cor").innerHTML = "Wrong!";
+  document.getElementById("problemOptions").style.display = "none";
+  document.getElementById("solutionOptions").style.display = "inline";
+  document.getElementById("solution").innerHTML = questions[problem][1];
+}
+
+function problemCorrect() {
+  if (progress < 5000) {
+    updateRating(array[Math.floor(progress / 100)][1] * ratingJump);
+  }
+  problemsCorrect++;
+  document.getElementById("cor").innerHTML = "Correct!";
+  document.getElementById("problemOptions").style.display = "none";
+  document.getElementById("solutionOptions").style.display = "inline";
+  document.getElementById("solution").innerHTML = questions[problem][1];
+}
+
+function loadNewQuestion() {
+  var ele = document.getElementsByName("gender");
+  for (var i = 0; i < ele.length; i++) {
+    ele[i].checked = false;
+  }
+  progressBar.innerHTML = parseInt(ar.innerHTML);
+  questionsSolved++;
+  problem = Math.round(progress / 100) - 1;
+  if (progress > 1800 && problem < 25) {
+    problem = 25;
+  } else if (problem > 49) {
+    problem = (problem % 25) + 24;
+  }
+  console.log(notComingAgain);
+  console.log(problem);
+  while (notComingAgain.indexOf(problem) > -1) {
+    problem++;
+  }
+  document.getElementById("problem").innerHTML = questions[problem][0];
+  document.getElementById("problemOptions").style.display = "inline";
+  document.getElementById("solutionOptions").style.display = "none";
+  document.getElementById("o1").innerHTML = questions[problem][2];
+  document.getElementById("o2").innerHTML = questions[problem][3];
+  document.getElementById("o3").innerHTML = questions[problem][4];
+  document.getElementById("o4").innerHTML = questions[problem][5];
+  document.getElementById("o5").innerHTML = questions[problem][6];
+}
+
+function gradeProblem(x) {
+  let id = ["option0", "option1", "option2", "option3", "option4"];
+  notComingAgain.push(problem);
+  if (x) {
+    if (document.getElementById(id[questions[problem][7] - 3]).checked) {
+      //They selected the correct option
+      problemCorrect();
+      totalProg += Math.max(parseInt(ar.innerHTML), progress);
+    } else {
+      //They selected the wrong option
+      problemWrong();
+      totalProg += progress / 2;
+    }
+  } else {
+    //They clicked "See Solution"
+    updateRating(
+      Math.round(
+        array[Math.floor(progress / 100)][0] * ratingJump
+      )
+    );
+    document.getElementById("cor").innerHTML = "Don't worry, you got this!";
+    document.getElementById("problemOptions").style.display = "none";
+    document.getElementById("solutionOptions").style.display = "inline";
+    document.getElementById("solution").innerHTML = questions[problem][1];
+    totalProg += progress / 2;
+  }
+  cr.innerHTML = progress;
+  ar.innerHTML = Math.round(totalProg / (attemptCount + 2));
+  acc.innerHTML =
+    Math.round((problemsCorrect * 100) / (questionsSolved + 1)) + "%";
+  qs.innerHTML = questionsSolved + 1;
+  progressBar.style.width =
+    Math.round(totalProg / (attemptCount + 2)) / 32 + "%";
+
+  if (
+    Math.round(totalProg / (attemptCount + 2)) -
+      parseInt(progressBar.innerHTML) >
+    0
+  ) {
+    progressBar.innerHTML =
+      "<strong>" +
+      Math.round(totalProg / (attemptCount + 2)) +
+      "</strong> (+" +
+      (Math.round(totalProg / (attemptCount + 2)) -
+        parseInt(progressBar.innerHTML)) +
+      ")";
+  } else {
+    progressBar.innerHTML =
+      "<strong>" +
+      Math.round(totalProg / (attemptCount + 2)) +
+      "</strong> (" +
+      (Math.round(totalProg / (attemptCount + 2)) -
+        parseInt(progressBar.innerHTML)) +
+      ")";
+  }
+
+  setTimeout(function () {
+    attemptCount++;
+    ratingHistory.push(Math.round(totalProg / (attemptCount + 1)));
+    if (attemptCount > 25) {
+      eloChart.data.labels.push(attemptCount);
+    }
+    eloChart.data.datasets[0].data.push(
+      Math.round(totalProg / (attemptCount + 1))
+    );
+    eloChart.update();
+  }, 201 * 3);
+}
+
+for (var i = 0; i < initialLabels.length; i++) {
+  eloChart.data.labels.push(initialLabels[i]);
+}
+
+// Updated updateRating function that also updates the Elo progression chart
+function updateRating(amount) {
+  let val = progress;
+  /*for (let i = 200; i >= 1; i--) {
+          setTimeout(function () {
+            val += (amount * i) / 20100;
+            progressBar.style.width = val / 32 + "%";
+            if (amount < 0) {
+              progressBar.innerHTML =
+                "<strong>" + Math.round(val) + "</strong> (" + amount + ")";
+            } else {
+              progressBar.innerHTML =
+                "<strong>" + Math.round(val) + "</strong> (+" + amount + ")";
+            }
+            if (val < 499.5) {
+              progressBar.style.backgroundColor = "#ff0000";
+            } else {
+              progressBar.style.backgroundColor = "#4caf50";
+            }
+          }, i * 3);
+        }*/
+  progress += amount;
+
+  /* After the animation, update the chart with the new rating.
+        setTimeout(function () {
+          attemptCount++;
+          ratingHistory.push(progress);
+          if (attemptCount > 25) {
+            eloChart.data.labels.push(attemptCount);
+          }
+          eloChart.data.datasets[0].data.push(progress);
+          eloChart.update();
+        }, 201 * 3);*/
+}
+// Inject CSS for the popup
+  var popupStyle = document.createElement("style");
+  popupStyle.innerHTML = `
+  .popup-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(0, 0, 0, 0.6);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 10000;
+  }
+  .popup-content {
+    background: #fff;
+    padding: 20px 30px;
+    border-radius: 10px;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+    text-align: center;
+    font-size: 1.2em;
+    max-width: 50%;
+    max-height: 75%;
+    position: relative;
+    overflow-y: scroll;
+  }
+  .close-btn {
+    position: absolute;
+    top: 10px;
+    right: 15px;
+    font-size: 20px;
+    cursor: pointer;
+    background: none;
+    border: none;
+  }
+  @keyframes fadeIn {
+    from { opacity: 0; transform: scale(0.8); }
+    to { opacity: 1; transform: scale(1); }
+  }
+`;
+  document.head.appendChild(popupStyle);
+
+  function showPopup(message) {
+    var overlay = document.createElement("div");
+    overlay.className = "popup-overlay";
+    
+    var content = document.createElement("div");
+    content.className = "popup-content";
+    content.innerHTML = message;
+    
+    var closeButton = document.createElement("button");
+    closeButton.className = "close-btn";
+    closeButton.innerHTML = "&times;";
+    closeButton.onclick = function() {
+      document.body.removeChild(overlay);
+    };
+    
+    overlay.onclick = function(event) {
+      if (event.target === overlay) {
+        document.body.removeChild(overlay);
+      }
+    };
+    
+    content.appendChild(closeButton);
+    overlay.appendChild(content);
+    document.body.appendChild(overlay);
+  }
+
+  var proficiencyShown = false;
+  var masteryShown = false;
+
+  setInterval(function () {
+    if (typeof progress !== "undefined") {
+      if (progress >= 4000 && !proficiencyShown) {
+        proficiencyShown = true;
+        showPopup(
+          "<strong>Proficiency Achieved!</strong><br>You have achieved proficiency by getting to a rating above 4000.<br>"
+        );
+      }
+      if (progress >= 5000 && !masteryShown) {
+        masteryShown = true;
+        showPopup(
+          "<strong>Mastery Achieved!</strong><br>You have achieved mastery by getting to a rating above 5000."
+        );
+      }
+    }
+  }, 500);
+
+  showPopup('<h3>Tutorial - How to Use Elo Practice</h3><iframe width="560" height="315" src="https://www.youtube.com/embed/VYgirFHLwrM?si=h47XOI1EQchj7d-z" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe><br><p>For practice units, we have a database full of questions with each problem having its own problem rating, which you can view under the stats tab. As you get problems right, you will level up your rating, when you miss problems, you lose rating. As your rating gets higher and higher, the problems become more and more difficult. Problems rated above 1800 are real AP questions taken straight from past exams, so you should have plenty of practice. <strong>Consider completed practice as either you completing 25 or more questions or getting to a rating above 1800.</strong><br><br><i>Note: Progress is not saved when you close or refresh the tab</i>'); 
+    </script>
+    </body>
+</html>
