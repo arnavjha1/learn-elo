@@ -1,0 +1,1113 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Dynamic Progress Bar</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap"
+      rel="stylesheet"
+    />
+    <!-- Include Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <style>
+      /* Global Styles */
+      body {
+        margin: 0;
+        padding: 0;
+        font-family: "Roboto", sans-serif;
+        background: linear-gradient(135deg, #83a4d4, #b6fbff);
+        color: #333;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        min-height: 100vh;
+      }
+      .container {
+        overflow-y: scroll;
+        position: fixed;
+        top: 20px;
+        bottom: 20px;
+        background: #fff;
+        max-width: 800px;
+        width: 90%;
+        padding: 30px;
+        border-radius: 15px;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+      }
+      /* Chart Styles */
+      #eloChart {
+        margin-bottom: 20px;
+      }
+      /* Progress Bar Styles */
+      .progress-container {
+        width: 100%;
+        background-color: #e0e0e0;
+        border-radius: 25px;
+        overflow: hidden;
+        margin-bottom: 20px;
+      }
+      .progress-bar {
+        width: 0;
+        height: 30px;
+        text-align: center;
+        line-height: 30px;
+        color: white;
+        transition: width 1s ease;
+      }
+      #progressBar {
+        background-color: #ff2c00;
+        transition: width 1s ease, background-color 1.5s ease;
+      }
+      /* Content Styles */
+      h1 {
+        font-size: 2em;
+        margin-bottom: 10px;
+        text-align: center;
+      }
+      h2 {
+        text-align: center;
+      }
+      h4 {
+        font-weight: 500;
+      }
+      .question,
+      .option,
+      .solution {
+        margin-bottom: 15px;
+      }
+      .option input[type="radio"] {
+        margin-right: 10px;
+      }
+      button {
+        background-color: #4caf50;
+        color: #fff;
+        border: none;
+        padding: 10px 20px;
+        font-size: 1em;
+        border-radius: 5px;
+        cursor: pointer;
+        margin-right: 10px;
+        transition: background-color 0.3s ease;
+      }
+      button:hover {
+        background-color: #43a047;
+      }
+      /* Visibility Settings */
+      #problemOptions {
+        display: block;
+      }
+      #solutionOptions {
+        display: none;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <!-- Progress Bar -->
+      <div class="progress-container" id="pro">
+        <div class="progress-bar" id="progressBar">0%</div>
+      </div>
+      <h1>Unit 2 Practice</h1>
+      <div class="question">
+        <h4>
+          <span id="problem">Issue loading question (check console)</span>
+        </h4>
+      </div>
+      <div class="option">
+        <input type="radio" name="gender" id="option0" /><span id="o1"></span
+        ><br />
+        <input type="radio" name="gender" id="option1" /><span id="o2"></span
+        ><br />
+        <input type="radio" name="gender" id="option2" /><span id="o3"></span
+        ><br />
+        <input type="radio" name="gender" id="option3" /><span id="o4"></span
+        ><br />
+        <input type="radio" name="gender" id="option4" /><span id="o5"></span
+        ><br />
+      </div>
+      <div id="problemOptions">
+        <button onclick="gradeProblem(true)">Submit</button>
+        <button onclick="gradeProblem(false)">See Solution</button>
+      </div>
+      <div id="solutionOptions">
+        <strong><span id="cor">Wrong!</span> This is the solution:</strong
+        ><br />
+        <span id="solution"></span><br /><br />
+        <button onclick="loadNewQuestion()">Continue</button>
+      </div>
+      <!-- Elo Progression Chart -->
+      <canvas id="eloChart" width="800" height="200"></canvas>
+      <h4>Stats</h4>
+      <ul>
+        <li>Questions Solved: <c id="qs">0</c></li>
+        <li>Problem Rating: <c id="cr">500</c></li>
+        <li>Accuracy: <c id="acc">N/A</c></li>
+        <li>Actual Rating: <c id="ar">500</c></li>
+      </ul>
+    </div>
+  <script>
+    const ratingJump = 1;
+    const questions = [
+  // Q1 (The Internet)
+  [
+    "What is the primary function of the Domain Name System (DNS)?",
+    "DNS acts as the phonebook of the Internet, translating human-readable domain names like 'collegeboard.org' to machine-readable IP addresses.",
+    "To encrypt data for secure transmission.",
+    "To translate human-readable domain names into machine-readable IP addresses.", // Correct Answer
+    "To determine the fastest route for data packets to travel.",
+    "To guarantee that all data packets arrive at their destination.",
+    "To assign new IP addresses.",
+    4
+  ],
+  // Q2 (The Internet)
+  [
+    "The Internet is designed to be fault-tolerant. Which of the following best describes how this is achieved?",
+    "Fault tolerance is achieved through redundancy, particularly in routing. If one path fails, data packets can be rerouted through another available path.",
+    "By using a single, powerful central server to manage all traffic.",
+    "By having multiple, redundant paths for data to travel.", // Correct Answer
+    "By encrypting all data packets before they are sent.",
+    "By requiring all users to have a high-speed connection.",
+    "By assigning a unique IP to every packet.",
+    4
+  ],
+  // Q3 (The Internet)
+  [
+    "Information sent over the internet is broken down into smaller pieces. What are these pieces called?",
+    "Data is broken down into smaller, manageable pieces called packets for transmission over the internet using a technique called packet switching.",
+    "Bytes",
+    "Packets", // Correct Answer
+    "Protocols",
+    "Bits",
+    "URLs",
+    4
+  ],
+  // Q4 (The Internet)
+  [
+    "Which of the following statements best describes the relationship between the World Wide Web and the Internet?",
+    "The Internet is the global network infrastructure (hardware and protocols), while the Web is one of many services that runs on top of the Internet, using protocols like HTTP to link and display documents.",
+    "They are two different names for the same thing.",
+    "The World Wide Web is a service that runs on the Internet.", // Correct Answer
+    "The Internet is a part of the World Wide Web.",
+    "The World Wide Web is the hardware, and the Internet is the software.",
+    "The Internet is only for email; the Web is for websites.",
+    4
+  ],
+  // Q5 (The Internet)
+  [
+    "What is the main purpose of the Transmission Control Protocol (TCP)?",
+    "TCP works at a higher level than IP to ensure that all packets of a message are received, are in the correct order, and are not corrupted, providing reliable, ordered delivery.",
+    "To route individual data packets to their final destination.",
+    "To provide a reliable, ordered, and error-checked delivery of a stream of packets.", // Correct Answer
+    "To translate a domain name into an IP address.",
+    "To define the rules for displaying web pages in a browser.",
+    "To break messages into packets.",
+    4
+  ],
+  // Q6 (The Internet)
+  [
+    "An attempt to make an online service unavailable to its intended users by overwhelming it with traffic from multiple sources is known as what type of attack?",
+    "A Distributed Denial of Service (DDoS) attack uses a 'botnet' of many compromised computers to flood a target server with requests, making it unable to serve legitimate users.",
+    "Phishing",
+    "A Distributed Denial of Service (DDoS) attack", // Correct Answer
+    "A virus",
+    "SQL Injection",
+    "A firewall breach",
+    4
+  ],
+  // Q7 (The Internet)
+  [
+    "What is the role of an Internet Protocol (IP) address?",
+    "An IP address is a unique numerical label assigned to each device on a network, used for identification and location addressing, much like a mailing address for a house.",
+    "To specify the content type of a web page (e.g., HTML, image).",
+    "To provide a unique numerical address for each device on a network.", // Correct Answer
+    "To ensure that all packets of a message arrive in the correct order.",
+    "To encrypt the connection between a client and a server.",
+    "To store user preferences in a browser.",
+    4
+  ],
+  // Q8 (The Internet)
+  [
+    "When you visit a secure website (indicated by 'https://'), which protocol is primarily responsible for encrypting the communication between your browser and the server?",
+    "Transport Layer Security (TLS), the successor to Secure Sockets Layer (SSL), is the cryptographic protocol used to provide secure communication over a computer network. It is the 'S' in HTTPS.",
+    "DNS",
+    "Transport Layer Security (TLS)", // Correct Answer
+    "IP",
+    "TCP",
+    "FTP",
+    4
+  ],
+  // Q9 (The Internet)
+  [
+    "The principle that Internet Service Providers (ISPs) should treat all data traveling over their networks equally, without discriminating or charging differently based on user, content, or website is known as:",
+    "This is the definition of Net Neutrality, a debated principle advocating for an open and equal internet where ISPs cannot act as 'gatekeepers'.",
+    "The Digital Divide",
+    "Net Neutrality", // Correct Answer
+    "Open-Source Policy",
+    "The Internet Protocol",
+    "Cybersecurity",
+    4
+  ],
+  // Q10 (The Internet)
+  [
+    "Which of the following is a key benefit of packet switching?",
+    "Packet switching allows the network to be used more efficiently, as multiple communications can share the same path. It also increases resilience, as packets can be rerouted around failures.",
+    "It guarantees that packets will arrive in the order they were sent.",
+    "It allows for the efficient use of a network by routing packets independently.", // Correct Answer
+    "It requires a dedicated, end-to-end connection for the duration of a transmission.",
+    "It eliminates the need for IP addresses.",
+    "It is less secure than circuit switching.",
+    4
+  ],
+  // Q11 (The Internet)
+  [
+    "Which protocol is used by a web browser to request a webpage from a web server?",
+    "Hypertext Transfer Protocol (HTTP) is the foundational protocol of the World Wide Web, defining the format of messages and how web clients and servers communicate.",
+    "SMTP",
+    "Hypertext Transfer Protocol (HTTP)", // Correct Answer
+    "TCP",
+    "IP",
+    "DNS",
+    4
+  ],
+  // Q12 (The Internet)
+  [
+    "What is redundancy in the context of the Internet's design?",
+    "Redundancy refers to having multiple, duplicate systems or paths. On the internet, this means having many routers and cables so that if one fails, traffic can still get through.",
+    "The process of breaking messages into smaller packets.",
+    "The inclusion of extra components or paths that are not strictly necessary to function, but provide fault tolerance.", // Correct Answer
+    "The practice of storing multiple copies of the same file on a single server.",
+    "A type of cyberattack that sends redundant, unnecessary requests to a server.",
+    "The process of reducing network traffic.",
+    4
+  ],
+  // Q13 (The Internet)
+  [
+    "You receive an email that appears to be from your bank, asking you to click a link and verify your account details. This is most likely an example of what?",
+    "Phishing is a social engineering attack where an attacker sends a fraudulent message designed to trick a person into revealing sensitive information.",
+    "A DDoS attack",
+    "Phishing", // Correct Answer
+    "A software virus",
+    "A digital certificate",
+    "Net neutrality",
+    4
+  ],
+  // Q14 (The Internet)
+  [
+    "The set of rules that govern how devices communicate over a network is called a:",
+    "A protocol is an agreed-upon set of rules and conventions for communication. TCP, IP, and HTTP are all examples of protocols.",
+    "Packet",
+    "Protocol", // Correct Answer
+    "Bandwidth",
+    "IP Address",
+    "Server",
+    4
+  ],
+  // Q15 (The Internet)
+  [
+    "What does a digital certificate, used in protocols like TLS/SSL, primarily aim to do?",
+    "A digital certificate, issued by a Certificate Authority, is used to verify that the owner of a public key is a specific entity, thus helping to prevent man-in-the-middle attacks and prove a website's identity.",
+    "To increase the speed of a network connection.",
+    "To verify the identity of a website or server and establish a secure, encrypted connection.", // Correct Answer
+    "To translate a website's domain name into its IP address.",
+    "To block unwanted network traffic.",
+    "To store a user's browsing history.",
+    4
+  ],
+  // Q16 (The Internet)
+  [
+    "Which of the following are part of the TCP/IP protocol suite? I. TCP II. IP III. HTTP",
+    "TCP and IP are the core protocols that give the suite its name. HTTP is a higher-level application protocol that runs on top of TCP/IP but is distinct from it.",
+    "I only",
+    "I and II only", // Correct Answer
+    "II and III only",
+    "I and III only",
+    "I, II, and III",
+    5
+  ],
+  // Q17 (The Internet)
+  [
+    "The path that a data packet travels from a sender to a receiver is determined by devices called:",
+    "Routers are networking devices that forward data packets between computer networks. They read the destination IP address of a packet and use routing tables to determine the next best path.",
+    "Clients",
+    "Routers", // Correct Answer
+    "Servers",
+    "Web browsers",
+    "Modems",
+    4
+  ],
+  // Q18 (The Internet)
+  [
+    "Which of the following is true about IPv4 and IPv6 addresses?",
+    "IPv4 uses a 32-bit address space, allowing for about 4.3 billion unique addresses. IPv6 was created to solve the depletion of IPv4 addresses and uses a 128-bit space, allowing for a vastly larger number of addresses.",
+    "IPv4 and IPv6 can both represent the same number of unique addresses.",
+    "IPv6 allows for a much larger number of unique addresses than IPv4.", // Correct Answer
+    "IPv4 is a more secure protocol than IPv6.",
+    "Only IPv6 addresses are used on the modern internet.",
+    "IPv4 addresses are longer than IPv6 addresses.",
+    4
+  ],
+  // Q19 (The Internet)
+  [
+    "Self-replicating malicious software that spreads by attaching itself to other programs is best described as a:",
+    "A virus is a type of malware that, when executed, replicates by inserting copies of itself into other computer programs, data files, or the boot sector of the hard drive.",
+    "DDoS attack",
+    "Computer virus", // Correct Answer
+    "Phishing attempt",
+    "Firewall",
+    "Botnet",
+    4
+  ],
+  // Q20 (The Internet)
+  [
+    "The hierarchy of the internet can be visualized as a network of networks. At the highest level are the main arteries of the internet, managed by large companies. These are known as:",
+    "The internet is structured as a hierarchy. At the top are Tier 1 Internet Service Providers (ISPs), which operate the high-speed backbone networks that span the globe.",
+    "Local area networks (LANs)",
+    "Internet Service Providers (ISPs) and network backbones", // Correct Answer
+    "Individual home routers",
+    "Web servers",
+    "Clients",
+    4
+  ],
+  // Q21 (The Internet)
+  [
+    "What is the function of a client in the client-server model?",
+    "In the client-server model, the client is a program or device that requests services or resources from a server. A web browser is a common example of a client.",
+    "To store and serve files to other computers.",
+    "To initiate requests for services or resources from a server.", // Correct Answer
+    "To manage the routing of data packets across the network.",
+    "To translate domain names into IP addresses.",
+    "To provide fault tolerance.",
+    4
+  ],
+  // Q22 (The Internet)
+  [
+    "If one packet in a multi-packet message fails to arrive at the destination, how does TCP handle this?",
+    "TCP is a 'stateful' protocol. It keeps track of the packets sent, and if the receiver does not acknowledge receipt of a packet within a certain time, TCP will retransmit it.",
+    "The entire message is automatically discarded.",
+    "TCP will retransmit the missing packet.", // Correct Answer
+    "The Internet Protocol (IP) will create a new packet to replace it.",
+    "The message is delivered with the missing packet, and the receiving application must handle the error.",
+    "The sender's DNS server is notified.",
+    4
+  ],
+  // Q23 (The Internet)
+  [
+    "What is meant by the 'scalability' of the internet?",
+    "Scalability refers to the ability of a system to handle a growing amount of work. The internet's design is highly scalable, allowing it to grow from a small network to a global system connecting billions of devices.",
+    "The physical size of the internet's cables.",
+    "The ability of the internet to continue growing and handling an increasing number of users and devices.", // Correct Answer
+    "The speed at which data can be transferred over the internet.",
+    "The security of the internet against cyberattacks.",
+    "The number of protocols it uses.",
+    4
+  ],
+  // Q24 (The Internet)
+  [
+    "Which of these is NOT a function of the Internet Protocol (IP)?",
+    "IP is responsible for addressing and routing packets (getting them to the correct destination network). TCP is responsible for ensuring the reliable, ordered delivery of those packets.",
+    "Addressing packets with a source and destination IP address.",
+    "Ensuring all packets arrive in the correct order.", // Correct Answer
+    "Routing packets from a source to a destination across networks.",
+    "Breaking data into packets.",
+    "None of the above.",
+    4
+  ],
+  // Q25 (The Internet)
+  [
+    "A company wants to ensure that its employees are the only people who can access a private network. What technology would they most likely use to create a secure, encrypted connection over the public internet?",
+    "A Virtual Private Network (VPN) creates an encrypted 'tunnel' over the public internet, allowing remote users to securely access a private network as if they were physically connected to it.",
+    "A public Wi-Fi hotspot.",
+    "A Virtual Private Network (VPN).", // Correct Answer
+    "The Hypertext Transfer Protocol (HTTP).",
+    "A social media network.",
+    "A DNS server.",
+    4
+  ],
+  // Q26 (The Internet)
+  [
+    "When packets are routed on the internet, which of the following is true?",
+    "Packet switching is dynamic. The path for each packet is determined independently, and they do not need to follow the same path, which contributes to the internet's fault tolerance.",
+    "All packets in a single message must follow the exact same path.",
+    "The path for each packet is decided dynamically, and different packets may take different routes.", // Correct Answer
+    "The path is determined by the sender before the first packet is sent.",
+    "Routers choose the longest, most secure path for data to travel.",
+    "Packets are sent alphabetically by destination.",
+    4
+  ],
+  // Q27 (The Internet)
+  [
+    "What information is used by a router to make a decision about where to send a packet next?",
+    "Routers examine the destination IP address in the header of a packet and compare it with their internal routing table to determine the best next 'hop' towards the final destination.",
+    "The size of the packet.",
+    "The destination IP address of the packet.", // Correct Answer
+    "The type of content within the packet (e.g., video, text).",
+    "The time the packet was sent.",
+    "The sender's email address.",
+    4
+  ],
+  // Q28 (The Internet)
+  [
+    "The sequential and hierarchical nature of the DNS is best illustrated by which of the following?",
+    "DNS resolution is hierarchical. A local resolver asks a root server, which directs it to a top-level domain (e.g., .org) server, which then directs it to an authoritative server for the specific domain.",
+    "The fact that any server can answer any DNS query.",
+    "The process of a query moving from a local DNS server to a root server, then to a TLD server, and finally to an authoritative server.", // Correct Answer
+    "The use of TCP to ensure every DNS response is received.",
+    "The random path a DNS request takes through the internet.",
+    "The equal status of all DNS servers.",
+    4
+  ],
+  // Q29 (The Internet)
+  [
+    "Which pair of protocols are most fundamental to the operation of the internet, forming the 'Internet Protocol Suite'?",
+    "TCP and IP are the core protocols of the internet. IP handles the addressing and routing of packets, while TCP manages the reliable transmission of the complete message.",
+    "HTTP and DNS",
+    "TCP and IP", // Correct Answer
+    "SSL and TLS",
+    "HTML and CSS",
+    "FTP and SMTP",
+    4
+  ],
+  // Q30 (The Internet)
+  [
+    "Why might a message sent over the internet arrive out of order?",
+    "Because of packet switching, individual packets can take different routes of varying speeds. TCP is responsible for reassembling them in the correct order at the destination.",
+    "Because of hardware errors in the sending computer.",
+    "Because packets may be routed through different paths of varying speeds.", // Correct Answer
+    "Because the Internet Protocol (IP) intentionally scrambles packets for security.",
+    "Because the DNS server sent the address information in the wrong order.",
+    "This is not possible on the modern internet.",
+    4
+  ],
+  // Q31 (The Internet)
+  [
+    "Cryptography is essential for secure internet communication. What is the primary purpose of public key encryption?",
+    "Public key cryptography uses a pair of keys: a public key to encrypt data and a private key to decrypt it. This allows anyone to send a secure message to a recipient, but only the recipient can decrypt it.",
+    "To ensure all packets arrive in the correct sequence.",
+    "To allow a sender to encrypt a message with a publicly available key, which can only be decrypted by a recipient's private key.", // Correct Answer
+    "To compress data and reduce the size of files for faster transmission.",
+    "To route data packets more efficiently across the network.",
+    "To translate IP addresses into domain names.",
+    4
+  ],
+  // Q32 (The Internet)
+  [
+    "Which of these best describes the Internet Engineering Task Force (IETF)?",
+    "The IETF is a large, open, international community of network designers, operators, vendors, and researchers concerned with the evolution of the internet architecture and the smooth operation of the internet. They develop internet standards.",
+    "A government agency that regulates internet content.",
+    "An open standards organization that develops and promotes voluntary internet standards, such as the protocols of the TCP/IP suite.", // Correct Answer
+    "A corporation that owns and operates the internet's backbone.",
+    "A cybersecurity firm that protects against DDoS attacks.",
+    "A search engine company.",
+    4
+  ],
+  // Q33 (The Internet)
+  [
+    "A school's network is protected by a system that inspects incoming and outgoing traffic and decides whether to allow or block it based on a set of security rules. This system is a:",
+    "A firewall is a network security device that acts as a barrier between a trusted internal network and an untrusted external network, such as the internet.",
+    "DNS server",
+    "Firewall", // Correct Answer
+    "Router",
+    "Web server",
+    "Client",
+    4
+  ],
+  // Q34 (The Internet)
+  [
+    "Bandwidth is a measure of:",
+    "Bandwidth refers to the maximum rate at which data can be transferred across a network path. It is often measured in bits per second (bps).",
+    "The physical length of a network cable.",
+    "The maximum data transfer rate of a network.", // Correct Answer
+    "The number of devices connected to a network.",
+    "The time it takes for a single packet to travel from source to destination.",
+    "The number of routers on a network.",
+    4
+  ],
+  // Q35 (The Internet)
+  [
+    "Which of the following is NOT an advantage of the internet's design, which is based on open protocols?",
+    "Open protocols (like TCP/IP and HTTP) are publicly documented and available, which encourages innovation and interoperability. However, this openness can also be exploited by malicious actors.",
+    "It allows for interoperability between devices from different manufacturers.",
+    "It makes it more difficult for malicious attacks to occur, since the protocols are public.", // Correct Answer
+    "It facilitates innovation, as new applications can be built on top of existing protocols.",
+    "It supports the growth and scalability of the network.",
+    "It is not controlled by a single entity.",
+    4
+  ],
+  // Q36 (The Internet)
+  [
+    "The time it takes for a bit to travel from a sender to a receiver is called:",
+    "Latency is the delay in data communication over a network. It represents the time it takes for a signal or packet of data to travel from one designated point to another.",
+    "Bandwidth",
+    "Latency", // Correct Answer
+    "Protocol",
+    "Packet loss",
+    "Jitter",
+    4
+  ],
+  // Q37 (The Internet)
+  [
+    "Which of the following describes the computing model where a single, powerful computer provides services to many less powerful computers?",
+    "This is the definition of the client-server model. The central computer is the server (provides services) and the less powerful computers are the clients (request services).",
+    "Peer-to-peer network",
+    "Client-server model", // Correct Answer
+    "Distributed computing",
+    "The Internet of Things",
+    "Cloud computing",
+    4
+  ],
+  // Q38 (The Internet)
+  [
+    "HTTP is considered a 'stateless' protocol. What does this mean?",
+    "Stateless means that the server does not keep any memory of past requests from a client. Each request is treated as a brand new interaction. Technologies like cookies were invented to work around this.",
+    "HTTP can only transmit text, not images or videos.",
+    "Each request from a client to a server is treated as an independent transaction, unrelated to any previous request.", // Correct Answer
+    "The protocol is not secure and all data is sent in plain text.",
+    "The protocol does not have a formal standards document.",
+    "The protocol does not require IP addresses.",
+    4
+  ],
+  // Q39 (The Internet)
+  [
+    "A user's browser has to make separate requests to get the text for a webpage and each of the three images on the webpage. How many HTTP requests will be made?",
+    "The browser makes an initial request for the HTML file that defines the page structure. It then parses that file and makes separate, additional requests for each resource referenced, such as images, CSS files, etc.",
+    "1",
+    "4", // Correct Answer
+    "3",
+    "0",
+    "It depends on the server.",
+    3
+  ],
+  // Q40 (The Internet)
+  [
+    "The internet's architecture is best described as:",
+    "The internet is decentralized, meaning there is no single point of control or failure. It is also distributed, as resources and computing power are spread across many different devices and locations.",
+    "Centralized and hierarchical",
+    "Decentralized and distributed", // Correct Answer
+    "A single, secure network",
+    "A proprietary system owned by one company",
+    "A fully linear system",
+    4
+  ],
+  // Q41 (The Internet)
+  [
+    "Which statement accurately describes the packets of a single message traveling through the internet?",
+    "Due to the dynamic nature of routing in packet-switched networks, different packets of the same message can travel different routes and may arrive out of sequence.",
+    "All packets must be the same size.",
+    "They can take different paths and may arrive out of order.", // Correct Answer
+    "They are guaranteed to arrive at the destination.",
+    "They are always encrypted by the IP protocol.",
+    "They must all travel along the same path.",
+    4
+  ],
+  // Q42 (The Internet)
+  [
+    "When a secure connection is established using TLS/SSL, what is exchanged between the client and server to create a shared secret for encryption?",
+    "Public and private keys are used during an initial 'handshake' process to securely exchange a symmetric session key, which is then used to encrypt the rest of the communication.",
+    "Plain-text passwords",
+    "Public and private keys", // Correct Answer
+    "DNS records",
+    "IP addresses",
+    "Cookies",
+    4
+  ],
+  // Q43 (The Internet)
+  [
+    "How does a Certificate Authority (CA) contribute to internet security?",
+    "A CA is a trusted third party that issues digital certificates. Browsers are pre-configured to trust certificates issued by these authorities, which confirms that a website's public key genuinely belongs to that website.",
+    "By routing traffic away from malicious websites.",
+    "By issuing digital certificates that verify the identity of a website or organization.", // Correct Answer
+    "By manufacturing the routers that direct internet traffic.",
+    "By developing new encryption algorithms.",
+    "By assigning IP addresses.",
+    4
+  ],
+  // Q44 (The Internet)
+  [
+    "Which analogy is most fitting for the role of the Internet Protocol (IP)?",
+    "IP is responsible for giving each packet an address and getting it to the correct destination network, much like the postal service uses addresses to deliver letters to the right house.",
+    "A phone operator connecting a call and keeping the line open.",
+    "The postal address on an envelope.", // Correct Answer
+    "A certified mail receipt that confirms delivery.",
+    "The language spoken between two people.",
+    "The table of contents in a book.",
+    4
+  ],
+  // Q45 (The Internet)
+  [
+    "A new version of a protocol is released, but it is not backward compatible with the older version. This leads to issues where old and new systems cannot communicate. This illustrates the importance of what in internet protocols?",
+    "Open protocols are agreed-upon standards that ensure different systems can communicate. When standards diverge without backward compatibility, this interoperability is broken.",
+    "Speed",
+    "Open and agreed-upon standards", // Correct Answer
+    "Encryption",
+    "Centralized control",
+    "Proprietary software",
+    4
+  ],
+  // Q46 (The Internet)
+  [
+    "The collection of devices, from refrigerators to cars, that are connected to the internet to send and receive data is known as:",
+    "The Internet of Things (IoT) refers to the vast network of physical objects embedded with sensors, software, and other technologies for the purpose of connecting and exchanging data with other devices and systems over the internet.",
+    "The World Wide Web",
+    "The Internet of Things (IoT)", // Correct Answer
+    "The client-server model",
+    "The TCP/IP protocol suite",
+    "Cloud computing",
+    4
+  ],
+  // Q47 (The Internet)
+  [
+    "If a router on the internet malfunctions, what is the most likely outcome for data packets being sent through it?",
+    "Due to the redundant and fault-tolerant design of the internet, other routers will detect the failure and update their routing tables to send packets along alternative paths, bypassing the failed router.",
+    "All internet traffic will stop globally.",
+    "Packets will be rerouted through another path by other routers.", // Correct Answer
+    "The sender will be notified that they must resend the entire message.",
+    "The packets will be lost, and TCP will not be able to recover them.",
+    "The packets will be converted to a different protocol.",
+    4
+  ],
+  // Q48 (The Internet)
+  [
+    "Which of these is a valid IPv4 address?",
+    "An IPv4 address consists of four numbers, each between 0 and 255, separated by periods. '256' is outside this range, letters are not used, and there must be four parts.",
+    "192.168.1.256",
+    "172.16.254.1", // Correct Answer
+    "2001:0db8:85a3:0000:0000:8a2e:0370:7334",
+    "127.0.0",
+    "192.168.A.1",
+    4
+  ],
+  // Q49 (The Internet)
+  [
+    "A programmer is building a real-time video chat application where speed is more critical than ensuring every single frame arrives perfectly. Which transport protocol might be more suitable than TCP?",
+    "UDP (User Datagram Protocol) is a connectionless, 'fire-and-forget' protocol that is faster than TCP because it does not perform error checking or guarantee ordered delivery, making it suitable for time-sensitive applications like streaming or online gaming.",
+    "HTTP",
+    "User Datagram Protocol (UDP)", // Correct Answer
+    "IP",
+    "DNS",
+    "SMTP",
+    4
+  ],
+  // Q50 (The Internet)
+  [
+    "Which of the following would be considered a client-side action?",
+    "Client-side actions happen on the user's computer. A browser rendering HTML is a classic example. The server's role is to process requests and send back data, like the HTML file itself.",
+    "A web server retrieving a record from a database.",
+    "A web browser rendering HTML to display a webpage.", // Correct Answer
+    "A DNS server translating a domain name.",
+    "A mail server sending an email.",
+    "A router forwarding a packet.",
+    4
+  ]
+];
+
+let array = [
+  [-1, 300], // 0
+  [-11, 290], // 100
+  [-21, 275], // 200
+  [-32, 260], // 300
+  [-42, 245], // 400
+  [-53, 230], // 500
+  [-64, 218], // 600
+  [-75, 207], // 700
+  [-83, 197], // 800
+  [-92, 188], // 900
+  [-101, 180], // 1000
+  [-112, 173], // 1100
+  [-125, 167], // 1200
+  [-133, 162], // 1300
+  [-144, 158], // 1400
+  [-152, 154], // 1500
+  [-161, 150], // 1600
+  [-175, 147], // 1700
+  [-183, 144], // 1800
+  [-215, 94], // 1900
+  [-242, 82], // 2000
+  [-275, 73], // 2100
+  [-302, 67], // 2200
+  [-321, 51], // 2300
+  [-349, 42], // 2400
+  [-381, 36], // 2500
+  [-418, 31], // 2600
+  [-427, 27], // 2700
+  [-431, 24], // 2800
+  [-434, 22], // 2900
+  [-436, 21], // 3000
+  [-437, 20], // 3100
+  [-437, 19], // 3200
+  [-437, 19], // 3300
+];
+
+
+// Global variables for Elo rating history and Chart instance
+let ratingHistory = [];
+let attemptCount = 0;
+
+// Preload 25 columns (labels 1 to 25)
+let initialLabels = Array.from({ length: 25 }, (_, i) => i + 1);
+
+// Initialize Chart.js line chart for Elo progression
+const ctx = document.getElementById("eloChart").getContext("2d");
+const eloChart = new Chart(ctx, {
+  type: "line",
+  data: {
+    labels: [], // preloaded with 25 columns
+    datasets: [
+      {
+        label: "Progression",
+        data: [],
+        fill: false,
+        borderColor: "blue",
+        tension: 0.1,
+      },
+    ],
+  },
+  options: {
+    scales: {
+      x: {
+        title: {
+          display: true,
+          text: "Questions Solved",
+        },
+      },
+      y: {
+        beginAtZero: true,
+        suggestedMax: 2300,
+        title: {
+          display: true,
+          text: "Rating",
+        },
+      },
+    },
+  },
+});
+
+setTimeout(preloadAttempts, 1000);
+function preloadAttempts() {
+  attemptCount = -1;
+  for (var i = 0; i < ratingHistory.length; i++) {
+    attemptCount++;
+    // If attemptCount exceeds the preloaded labels, expand the labels array
+    if (attemptCount > eloChart.data.labels.length) {
+      eloChart.data.labels.push(attemptCount);
+    } else {
+      // Otherwise, update the existing label (optional)
+      eloChart.data.labels[attemptCount - 1] = attemptCount - 1;
+    }
+    eloChart.data.datasets[0].data.push(ratingHistory[i]);
+    eloChart.update();
+  }
+  if (ratingHistory.length > 0) {
+    eloChart.data.datasets[0].data.pop();
+    eloChart.update();
+  }
+}
+
+// Function to add a new attempt data point and update labels if needed
+function addAttempt(progressValue) {
+  attemptCount++;
+  ratingHistory.push(progressValue);
+  // If attemptCount exceeds the preloaded labels, expand the labels array
+  if (attemptCount > eloChart.data.labels.length) {
+    eloChart.data.labels.push(attemptCount);
+  } else {
+    // Otherwise, update the existing label (optional)
+    eloChart.data.labels[attemptCount - 1] = attemptCount;
+  }
+  eloChart.data.datasets[0].data.push(progressValue);
+  eloChart.update();
+}
+
+let url = window.location.href;
+let cache = url.split("/class/")[1];
+let progress = 500;
+let notComingAgain = [];
+let problem = 2;
+let questionsSolved = -1;
+let totalProg = 500;
+let problemsCorrect = 0;
+let qs = document.getElementById("qs");
+let acc = document.getElementById("acc");
+let cr = document.getElementById("cr");
+let ar = document.getElementById("ar");
+
+const progressBar = document.getElementById("progressBar");
+const pro = document.getElementById("pro");
+progressBar.style.width = progress / 32 + "%";
+progressBar.textContent = Math.round(progress);
+
+// Initialize rating history with initial progress
+ratingHistory.push(progress);
+eloChart.data.labels.push(attemptCount);
+eloChart.data.datasets[0].data.push(progress);
+eloChart.update();
+
+loadNewQuestion();
+setInterval(progCheck, 100);
+
+function progCheck() {
+  var progres = ar.innerHTML;
+  if (progres < 1200) {
+    document.getElementById("progressBar").style.backgroundColor = "#ff2c00";
+  } else if (progres < 1800) {
+    document.getElementById("progressBar").style.backgroundColor = "#fcaf50";
+  } else if (progres < 2400) {
+    document.getElementById("progressBar").style.backgroundColor = "#4caf50";
+  } else {
+    document.getElementById("progressBar").style.backgroundColor = "#02a2ff";
+  }
+}
+
+function problemWrong() {
+  updateRating(
+    Math.round(
+      array[Math.floor(progress / 100)][0] * ratingJump
+    )
+  );
+  document.getElementById("cor").innerHTML = "Wrong!";
+  document.getElementById("problemOptions").style.display = "none";
+  document.getElementById("solutionOptions").style.display = "inline";
+  document.getElementById("solution").innerHTML = questions[problem][1];
+}
+
+function problemCorrect() {
+  if (progress < 5000) {
+    updateRating(array[Math.floor(progress / 100)][1] * ratingJump);
+  }
+  problemsCorrect++;
+  document.getElementById("cor").innerHTML = "Correct!";
+  document.getElementById("problemOptions").style.display = "none";
+  document.getElementById("solutionOptions").style.display = "inline";
+  document.getElementById("solution").innerHTML = questions[problem][1];
+}
+
+function loadNewQuestion() {
+  var ele = document.getElementsByName("gender");
+  for (var i = 0; i < ele.length; i++) {
+    ele[i].checked = false;
+  }
+  progressBar.innerHTML = parseInt(ar.innerHTML);
+  questionsSolved++;
+  problem = Math.round(progress / 100) - 1;
+  if (progress > 1800 && problem < 25) {
+    problem = 25;
+  } else if (problem > 49) {
+    problem = (problem % 25) + 24;
+  }
+  console.log(notComingAgain);
+  console.log(problem);
+  while (notComingAgain.indexOf(problem) > -1) {
+    problem++;
+  }
+  document.getElementById("problem").innerHTML = questions[problem][0];
+  document.getElementById("problemOptions").style.display = "inline";
+  document.getElementById("solutionOptions").style.display = "none";
+  document.getElementById("o1").innerHTML = questions[problem][2];
+  document.getElementById("o2").innerHTML = questions[problem][3];
+  document.getElementById("o3").innerHTML = questions[problem][4];
+  document.getElementById("o4").innerHTML = questions[problem][5];
+  document.getElementById("o5").innerHTML = questions[problem][6];
+}
+
+function gradeProblem(x) {
+  let id = ["option0", "option1", "option2", "option3", "option4"];
+  notComingAgain.push(problem);
+  if (x) {
+    if (document.getElementById(id[questions[problem][7] - 3]).checked) {
+      //They selected the correct option
+      problemCorrect();
+      totalProg += Math.max(parseInt(ar.innerHTML), progress);
+    } else {
+      //They selected the wrong option
+      problemWrong();
+      totalProg += progress / 2;
+    }
+  } else {
+    //They clicked "See Solution"
+    updateRating(
+      Math.round(
+        array[Math.floor(progress / 100)][0] * ratingJump
+      )
+    );
+    document.getElementById("cor").innerHTML = "Don't worry, you got this!";
+    document.getElementById("problemOptions").style.display = "none";
+    document.getElementById("solutionOptions").style.display = "inline";
+    document.getElementById("solution").innerHTML = questions[problem][1];
+    totalProg += progress / 2;
+  }
+  cr.innerHTML = progress;
+  ar.innerHTML = Math.round(totalProg / (attemptCount + 2));
+  acc.innerHTML =
+    Math.round((problemsCorrect * 100) / (questionsSolved + 1)) + "%";
+  qs.innerHTML = questionsSolved + 1;
+  progressBar.style.width =
+    Math.round(totalProg / (attemptCount + 2)) / 32 + "%";
+
+  if (
+    Math.round(totalProg / (attemptCount + 2)) -
+      parseInt(progressBar.innerHTML) >
+    0
+  ) {
+    progressBar.innerHTML =
+      "<strong>" +
+      Math.round(totalProg / (attemptCount + 2)) +
+      "</strong> (+" +
+      (Math.round(totalProg / (attemptCount + 2)) -
+        parseInt(progressBar.innerHTML)) +
+      ")";
+  } else {
+    progressBar.innerHTML =
+      "<strong>" +
+      Math.round(totalProg / (attemptCount + 2)) +
+      "</strong> (" +
+      (Math.round(totalProg / (attemptCount + 2)) -
+        parseInt(progressBar.innerHTML)) +
+      ")";
+  }
+
+  setTimeout(function () {
+    attemptCount++;
+    ratingHistory.push(Math.round(totalProg / (attemptCount + 1)));
+    if (attemptCount > 25) {
+      eloChart.data.labels.push(attemptCount);
+    }
+    eloChart.data.datasets[0].data.push(
+      Math.round(totalProg / (attemptCount + 1))
+    );
+    eloChart.update();
+  }, 201 * 3);
+}
+
+for (var i = 0; i < initialLabels.length; i++) {
+  eloChart.data.labels.push(initialLabels[i]);
+}
+
+// Updated updateRating function that also updates the Elo progression chart
+function updateRating(amount) {
+  let val = progress;
+  /*for (let i = 200; i >= 1; i--) {
+          setTimeout(function () {
+            val += (amount * i) / 20100;
+            progressBar.style.width = val / 32 + "%";
+            if (amount < 0) {
+              progressBar.innerHTML =
+                "<strong>" + Math.round(val) + "</strong> (" + amount + ")";
+            } else {
+              progressBar.innerHTML =
+                "<strong>" + Math.round(val) + "</strong> (+" + amount + ")";
+            }
+            if (val < 499.5) {
+              progressBar.style.backgroundColor = "#ff0000";
+            } else {
+              progressBar.style.backgroundColor = "#4caf50";
+            }
+          }, i * 3);
+        }*/
+  progress += amount;
+
+  /* After the animation, update the chart with the new rating.
+        setTimeout(function () {
+          attemptCount++;
+          ratingHistory.push(progress);
+          if (attemptCount > 25) {
+            eloChart.data.labels.push(attemptCount);
+          }
+          eloChart.data.datasets[0].data.push(progress);
+          eloChart.update();
+        }, 201 * 3);*/
+}
+// Inject CSS for the popup
+  var popupStyle = document.createElement("style");
+  popupStyle.innerHTML = `
+  .popup-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(0, 0, 0, 0.6);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 10000;
+  }
+  .popup-content {
+    background: #fff;
+    padding: 20px 30px;
+    border-radius: 10px;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+    text-align: center;
+    font-size: 1.2em;
+    max-width: 50%;
+    max-height: 75%;
+    position: relative;
+    overflow-y: scroll;
+  }
+  .close-btn {
+    position: absolute;
+    top: 10px;
+    right: 15px;
+    font-size: 20px;
+    cursor: pointer;
+    background: none;
+    border: none;
+  }
+  @keyframes fadeIn {
+    from { opacity: 0; transform: scale(0.8); }
+    to { opacity: 1; transform: scale(1); }
+  }
+`;
+  document.head.appendChild(popupStyle);
+
+  function showPopup(message) {
+    var overlay = document.createElement("div");
+    overlay.className = "popup-overlay";
+    
+    var content = document.createElement("div");
+    content.className = "popup-content";
+    content.innerHTML = message;
+    
+    var closeButton = document.createElement("button");
+    closeButton.className = "close-btn";
+    closeButton.innerHTML = "&times;";
+    closeButton.onclick = function() {
+      document.body.removeChild(overlay);
+    };
+    
+    overlay.onclick = function(event) {
+      if (event.target === overlay) {
+        document.body.removeChild(overlay);
+      }
+    };
+    
+    content.appendChild(closeButton);
+    overlay.appendChild(content);
+    document.body.appendChild(overlay);
+  }
+
+  var proficiencyShown = false;
+  var masteryShown = false;
+
+  setInterval(function () {
+    if (typeof progress !== "undefined") {
+      if (progress >= 4000 && !proficiencyShown) {
+        proficiencyShown = true;
+        showPopup(
+          "<strong>Proficiency Achieved!</strong><br>You have achieved proficiency by getting to a rating above 4000.<br>"
+        );
+      }
+      if (progress >= 5000 && !masteryShown) {
+        masteryShown = true;
+        showPopup(
+          "<strong>Mastery Achieved!</strong><br>You have achieved mastery by getting to a rating above 5000."
+        );
+      }
+    }
+  }, 500);
+
+  showPopup('<h3>Tutorial - How to Use Elo Practice</h3><iframe width="560" height="315" src="https://www.youtube.com/embed/VYgirFHLwrM?si=h47XOI1EQchj7d-z" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe><br><p>For practice units, we have a database full of questions with each problem having its own problem rating, which you can view under the stats tab. As you get problems right, you will level up your rating, when you miss problems, you lose rating. As your rating gets higher and higher, the problems become more and more difficult. Problems rated above 1800 are real AP questions taken straight from past exams, so you should have plenty of practice. <strong>Consider completed practice as either you completing 25 or more questions or getting to a rating above 1800.</strong><br><br><i>Note: Progress is not saved when you close or refresh the tab</i>'); 
+    </script>
+    </body>
+</html>
