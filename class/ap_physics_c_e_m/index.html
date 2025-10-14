@@ -7,6 +7,29 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet" />
   <style>
+      :root {
+        --bg-color: linear-gradient(135deg, #83a4d4, #b6fbff);
+        --box-bg: #fff;
+        --text-color: #333;
+        --button-bg: #4caf50;
+        --button-hover: #43a047;
+        --footer-color: #777;
+      }
+
+    #darklabel {
+      color: var(--darklabel);
+    }
+
+    body.dark-mode {
+      --bg-color: #121212;
+      --box-bg: #1e1e1e;
+      --text-color: #f1f1f1;
+      --button-bg: #2196f3;
+      --button-hover: #1976d2;
+      --footer-color: #aaa;
+      --darklabel: #000;
+    }
+
     body {
       margin: 0;
       padding: 0;
@@ -18,6 +41,7 @@
       align-items: center;
       min-height: 100vh;
     }
+
     .container {
       overflow-y: scroll;
       position: fixed;
@@ -64,9 +88,20 @@
     .btn:hover {
       background-color: #43a047;
     }
+      .navbar {
+        padding: 1rem;
+      }
+
   </style>
 </head>
 <body>
+    <nav class="navbar navbar-expand-lg navbar-light bg-light px-3">
+      <a class="navbar-brand fw-bold" href="#">AP Study Hub</a>
+      <div class="ms-auto toggle-switch">
+        <label class="form-check-label" id="darklabel" for="darkModeToggle">Dark Mode</label>
+        <input class="form-check-input" type="checkbox" id="darkModeToggle" />
+      </div>
+    </nav>
   <div class="container">
     <h1>AP Physics C: E & M</h1>
     <hr>
@@ -80,10 +115,24 @@
       <button class="btn" onclick="redirectTo('/class/ap_micro_macro/u6_micro')">Micro - Unit 6: Market Failure and Government Roles</button>-->
     </div>
   </div>
-  <script>
-    function redirectTo(page) {
-      window.location.href = "."+page;
-    }
-  </script>
+    <script>
+      let x = 0;
+      if (window.location.hash == "#dark") {
+        document.body.classList.add("dark-mode");
+        document.getElementById("darkModeToggle").checked = true;
+        x=1;
+      }
+      const toggle = document.getElementById("darkModeToggle");
+      toggle.addEventListener("change", function () {
+        document.body.classList.toggle("dark-mode");
+        x=1-x;
+      });
+      function redirectTo(page) {
+        if(x>0){
+          page+="#dark";
+        }
+        window.location.href = "."+page;
+      }
+    </script>
 </body>
 </html>
