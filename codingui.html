@@ -111,6 +111,11 @@
       #solutionOptions {
         display: none;
       }
+      pre {
+        width:100%; 
+        font-family: "Fira Code", "JetBrains Mono", Consolas, "Courier New", monospace; 
+        font-size: 1em;
+      }
     </style>
   </head>
   <body>
@@ -120,10 +125,8 @@
         <div class="progress-bar" id="progressBar"></div>
       </div>-->
       <h1>Unit 1 FRQ Practice</h1>
-      <div class="question">
-        <h4>
-          <span id="problem">Issue loading question (check console)</span>
-        </h4>
+      <div id="problem" class="question">
+        
       </div>
       <div class="option">
         <code>
@@ -151,7 +154,7 @@
       window.slowAIsearch = async function() {
         startLoadAnimation();
 
-        const prompt = "Take this free response question: " + frq[0] + ". The student responded to this FRQ with this response: " + document.getElementById("answer").value + ". Use this rubric to give the student detailed scoring feedback on how they could improve the response as well as their total score: " + frq[1] + ". Provide the feedback in a clear and concise manner and like an HTML document, using line breaks, but headings no more than h3 tags. Begin the feedback with 'Feedback:'. Finally, provide a total score out of 2 points at the end, beginning with 'Total Score:'.";
+        const prompt = "Take this free response question: " + frq[0] + ". And this sample response: " + frq[1] + ". The student responded to this FRQ with this response: " + document.getElementById("answer").value + ". Use this rubric to give the student detailed scoring feedback on how they could improve the response as well as their total score: " + frq[2] + ". Provide the feedback in a clear and concise manner and like an HTML document, using line breaks, but headings no more than h3 tags. Begin with 'Feedback: '. Do not include html, body, head, or style tags, just use plain html with headers, paragraphs, and line breaks. Finally, provide a total score out of 2 points at the end, beginning with 'Total Score:'.";
         const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
 
         const result = await model.generateContent(prompt);
@@ -161,13 +164,167 @@
       }
 
     const ratingJump = 1;
+    
+    // FRQ goes below, the first element is the question, the second element is a sample solution, the third element is the rubric/answer key. The first element should be well formated to html since it is directly displayed.
     const frq = [
-        "What is 1+1?",
-        "2"
+        `
+        <p>
+        This question focuses on primitive types and using objects and methods.<br>
+        Do not import any libraries; assume standard java.lang classes (String, Math, Integer, Double) are available.
+        </p>
+
+        <h3>Background</h3>
+        <p>
+        A simple arcade game tracks each player's score (an integer) and applies bonuses or multipliers to that score.<br>
+        The teacher provides the following helper class.
+        </p>
+
+        <pre>
+        public class Player {
+            private String name;   // player's name
+            private int score;     // player's current score
+
+            public Player(String name, int score) {
+                this.name = name;
+                this.score = score;
+            }
+
+            public String getName() { return name; }
+            public int getScore() { return score; }
+            public void setName(String name) { this.name = name; }
+            public void setScore(int score) { this.score = score; }
+        }
+        </pre>
+
+        <h3>Part (a)</h3>
+        <p>
+        Write a method named applyBonus that takes two parameters — an int baseScore and a double bonusPercent — and returns an int equal to the new score after the bonus is applied.<br>
+        The bonus is calculated as baseScore * bonusPercent and should be rounded down to an integer when added to the base score.<br>
+        For example, applyBonus(100, 0.25) returns 125 and applyBonus(99, 0.10) returns 108 (because 99*0.10 = 9.9; round down to 9; 99+9 = 108).
+        </p>
+
+        <p>Provide only the method (no full class). Use appropriate primitive types and casts where necessary.</p>
+
+        <pre>
+        // Example method header:
+        // public static int applyBonus(int baseScore, double bonusPercent) { ... }
+        </pre>
+
+        <h3>Part (b)</h3>
+        <p>
+        Write a method named applyBonusToPlayer that takes a Player p and a double bonusPercent.<br>
+        This method should update the Player's score by applying the bonus (use your applyBonus method).<br>
+        The method returns void.
+        </p>
+
+        <pre>
+        // Example header:
+        // public static void applyBonusToPlayer(Player p, double bonusPercent) { ... }
+        </pre>
+
+        <h3>Part (c)</h3>
+        <p>
+        After calling applyBonusToPlayer(p, 0.15), the game awards a "milestone" tag to any player whose score is now at least 1000.<br>
+        Write a method named checkMilestoneAndTag that takes a Player p and returns a String:
+        </p>
+
+        <p>
+        If the player's score is &lt; 1000, return the player's name unchanged.<br>
+        If the player's score is &ge; 1000, change the player's name by appending the string " ★" (space followed by a star), update the player's name, and return the new name.
+        </p>
+
+        <pre>
+        // Example header:
+        // public static String checkMilestoneAndTag(Player p) { ... }
+        </pre>
+
+        <h3>Part (d)</h3>
+        <p>
+        For the methods you wrote in (a), (b), and (c), give the output of the following sequence of statements.<br>
+        Show the exact console output (each System.out.println on its own line).
+        </p>
+
+        <pre>
+        Player p1 = new Player("Riley", 870);
+        System.out.println(applyBonus(200, 0.25));
+        applyBonusToPlayer(p1, 0.15);
+        System.out.println(p1.getScore());
+        System.out.println(checkMilestoneAndTag(p1));
+        </pre>
+
+        <h3>Scoring Notes</h3>
+        <p>
+        Typical AP-style partial-credit breakdown:<br>
+        Part (a): correct arithmetic and correct integer cast (2 points)<br>
+        Part (b): correctly updates p's score by using applyBonus (2 points)<br>
+        Part (c): correct branching and name update (2 points)<br>
+        Part (d): correct outputs (1 point)
+        </p>
+        `,
+        `public class Unit1Solution {
+            // Part (a)
+            public static int applyBonus(int baseScore, double bonusPercent) {
+                // compute bonus as baseScore * bonusPercent, round down by casting to int
+                int bonus = (int)(baseScore * bonusPercent); // truncates toward 0 (rounds down for positive)
+                return baseScore + bonus;
+            }
+
+            // Part (b)
+            public static void applyBonusToPlayer(Player p, double bonusPercent) {
+                int base = p.getScore();
+                int newScore = applyBonus(base, bonusPercent);
+                p.setScore(newScore);
+            }
+
+            // Part (c)
+            public static String checkMilestoneAndTag(Player p) {
+                if (p.getScore() >= 1000) {
+                    String newName = p.getName() + " ★";
+                    p.setName(newName);
+                    return newName;
+                } else {
+                    return p.getName();
+                }
+            }
+
+            // A small main method to demonstrate Part (d)
+            public static void main(String[] args) {
+                Player p1 = new Player("Riley", 870);
+
+                System.out.println(applyBonus(200, 0.25));
+                applyBonusToPlayer(p1, 0.15);
+                System.out.println(p1.getScore());
+                System.out.println(checkMilestoneAndTag(p1));
+            }
+        }
+        `,
+        `Short rubric / common partial-credit pitfalls.
+
+          Part (a)
+
+          Full credit: returns baseScore + (int)(baseScore * bonusPercent).
+
+          Partial credit: computes double result but fails to cast to int (returns a double) — lose point for incorrect return type or rounding.
+
+          Part (b)
+
+          Must update the player's score (use setScore) and use result from applyBonus (full credit).
+
+          If student recalculates logic instead of calling applyBonus, acceptable if correct (but AP prefers reuse).
+
+          Part (c)
+
+          Must check p.getScore() >= 1000, update the name via p.setName(...), and return the new name.
+
+          If student returns modified string but forgets to update the Player's name, partial credit.
+
+          Part (d)
+
+          Outputs must match exactly (each println on its own line).`
     ];
 
       let optimizedSearch = false;
-      document.getElementById("problem").innerText = frq[0];
+      document.getElementById("problem").innerHTML = frq[0];
       document.getElementById("answer").innerText = "";
 
       function startLoadAnimation(){
