@@ -90,7 +90,7 @@ if(localStorage.getItem(cache)){
 let notComingAgain = [];
 let problem = 2;
 let questionsSolved = -1;
-let totalProg = 500;
+let totalProg = progress;
 let problemsCorrect = 0;
 let qs = document.getElementById("qs");
 let acc = document.getElementById("acc");
