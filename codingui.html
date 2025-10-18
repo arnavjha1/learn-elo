@@ -115,11 +115,11 @@
   </head>
   <body>
     <div class="container">
-      <!-- Progress Bar -->
+      <!-- Progress Bar
       <div class="progress-container" id="pro">
-        <div class="progress-bar" id="progressBar">0%</div>
-      </div>
-      <h1>Unit 1 Practice</h1>
+        <div class="progress-bar" id="progressBar"></div>
+      </div>-->
+      <h1>Unit 1 FRQ Practice</h1>
       <div class="question">
         <h4>
           <span id="problem">Issue loading question (check console)</span>
@@ -127,14 +127,14 @@
       </div>
       <div class="option">
         <code>
-            <textarea id="answer" rows="10" style="width:100%; font-family: 'Roboto', sans-serif; font-size: 1em;">
+            <textarea id="answer" rows="10" style='width:100%; font-family: "Fira Code", "JetBrains Mono", Consolas, "Courier New", monospace; font-size: 1em;'>
             </textarea>
         </code>
       </div>
-    <button id="submit" style="visibility:visible" onclick="slowAIsearch()">⌕</button><br><br>
+    <button id="submit" style="visibility:visible" onclick="slowAIsearch()">Submit</button><br><br>
 
     <div id="loading" style="visibility:hidden">
-      <label for="file" id="search-label">Searching Database...</label><br>
+      <label for="file" id="search-label">Grading...</label><br>
       <progress id="file" value="0" max="100"></progress><br>
     </div>
     <div id="results" style="visibility:hidden">
@@ -151,7 +151,7 @@
       window.slowAIsearch = async function() {
         startLoadAnimation();
 
-        const prompt = "Take this free response question: " + frq[0] + ". The student responded to this FRQ with this response: " + document.getElementById("answer").innerHTML + ". Use this rubric to give the student detailed scoring feedback on how they could improve the response as well as their total score. " + document.getElementById("search-bar").value + "";
+        const prompt = "Take this free response question: " + frq[0] + ". The student responded to this FRQ with this response: " + document.getElementById("answer").value + ". Use this rubric to give the student detailed scoring feedback on how they could improve the response as well as their total score: " + frq[1] + ". Provide the feedback in a clear and concise manner and like an HTML document, using line breaks, but headings no more than h3 tags. Begin the feedback with 'Feedback:'. Finally, provide a total score out of 2 points at the end, beginning with 'Total Score:'.";
         const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
 
         const result = await model.generateContent(prompt);
@@ -162,33 +162,21 @@
 
     const ratingJump = 1;
     const frq = [
-        "(problem goes here)",
-        "(solution goes here)"
+        "What is 1+1?",
+        "2"
     ];
 
       let optimizedSearch = false;
-      let searchRes = [];
-      const mostResults = 30;
-      const mostRelevance = 5;
-      const resultsPerPage = 10;
-      let currentPage = 1;
-      let totalPages = 1;
+      document.getElementById("problem").innerText = frq[0];
+      document.getElementById("answer").innerText = "";
 
-      onloadScript();
-      function onloadScript(){
-        let hash = window.location.hash;
-        if(hash.length > 1){
-          document.getElementById("search-bar").value = hash.substring(1);
-          slowAIsearch();
-        }
-      }
       function startLoadAnimation(){
         document.getElementById("loading").style.visibility = "visible";
         document.getElementById("submit").style.visibility = "hidden";
 
         let progressBar = document.getElementById("file");
         let width = 0;
-        let id = setInterval(frame, database.length*8+250);
+        let id = setInterval(frame, 250);
         function frame() {
           if(!optimizedSearch){
             if (width >= 100) {
@@ -196,18 +184,18 @@
             } else {
               if(width > 75){
                 document.getElementById("search-label").innerText = "Deep Analysis (this may take a while) ...";
-                width += 0.2;
+                width += 0.05;
               }
               else if(width > 50){
-                document.getElementById("search-label").innerText = "Analyzing database ...";
-                width += 0.5;
+                document.getElementById("search-label").innerText = "Analyzing FRQ answer ...";
+                width += 0.125;
               }
               else if(width > 25){
-                document.getElementById("search-label").innerText = "Comparing results ...";
-                width += 1;
+                document.getElementById("search-label").innerText = "Comparing results to rubric ...";
+                width += 0.25;
               }
               else {
-                width += 3;
+                width += 0.75;
               }
               progressBar.value = width;
             }
@@ -231,6 +219,7 @@
             clearInterval(id);
             document.getElementById("loading").style.visibility = "hidden";
             document.getElementById("results").style.visibility = "visible";
+            document.getElementById("search-results").innerHTML = response;
             alert(response);
             processSearchResults(response);
           } else {
