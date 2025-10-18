@@ -1,4 +1,4 @@
-
+/****** elo-backend.js will only update in all the files if you push thru Github ******/
 
 // Global variables for Elo rating history and Chart instance
 let ratingHistory = [];
