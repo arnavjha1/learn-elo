@@ -154,7 +154,8 @@
       window.slowAIsearch = async function() {
         startLoadAnimation();
 
-        const prompt = "Take this free response question: " + frq[0] + ". And this sample response: " + frq[1] + ". The student responded to this FRQ with this response: " + document.getElementById("answer").value + ". Use this rubric to give the student detailed scoring feedback on how they could improve the response as well as their total score: " + frq[2] + ". Provide the feedback in a clear and concise manner and like an HTML document, using line breaks, but headings no more than h3 tags. Begin with 'Feedback: '. Do not include html, body, head, or style tags, just use plain html with headers, paragraphs, and line breaks. Finally, provide a total score out of 2 points at the end, beginning with 'Total Score:'.";
+        //Total Score out of 9 (if you want to change, change in prompt below)
+        const prompt = "Take this free response question: " + frq[0] + ". And this sample response: " + frq[1] + ". The student responded to this FRQ with this response: " + document.getElementById("answer").value + ". Use this rubric to give the student detailed scoring feedback on how they could improve the response as well as their total score: " + frq[2] + ". Provide the feedback in a clear and concise manner and like an HTML document, using line breaks, but headings no more than h3 tags. Begin with 'Feedback: '. Do not include html, body, head, or style tags, just use plain html with headers, paragraphs, and line breaks. Finally, provide a total score out of 9 points at the end, beginning with 'Total Score:'.";
         const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
 
         const result = await model.generateContent(prompt);

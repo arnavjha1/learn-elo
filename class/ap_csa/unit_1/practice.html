@@ -198,9 +198,9 @@ const questions = [
     "What is the output of the following statement? (a \"b\" denotes a blank space)\n<code>System.out.println(EasyFormat.format(5.37, 5, 1));</code>\n(Assume EasyFormat rounds to one decimal place and pads to width 5 with leading blanks.)",
     "Rounding 5.37 to 1 decimal gives 5.4. Width 5 with leading blanks will add two blanks before '5.4' (because '  5.4' has length 5). So the visible output starts with two blanks then 5.4.",
     "5.4",
-    " 5.3",
-    " 5.4",
-    "  5.4",
+    "b5.3",
+    "b5.4",
+    "bb5.4",
     4
   ],
 
@@ -748,7 +748,8 @@ let array = [
 ];
 </script>
 
-<!--All the backend comes from here-->
-  <script src="https://learn-elo.vercel.app/elo-backend.js"></script>
+<!--All the backend comes from here
+  <script src="https://learn-elo.vercel.app/elo-backend.js"></script>-->
+  <script src="file:///C:/Arnav/Repositories/learn-elo/elo-backend.js"></script>
     </body>
 </html>
