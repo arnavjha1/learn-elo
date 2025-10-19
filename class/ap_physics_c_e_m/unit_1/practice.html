@@ -25,14 +25,21 @@
         align-items: center;
         min-height: 100vh;
       }
-      body.dark-mode {
-        --bg-color: #121212;
-        --box-bg: #1e1e1e;
-        --text-color: #f1f1f1;
-        --button-bg: #2196f3;
-        --button-hover: #1976d2;
-        --footer-color: #aaa;
-      }
+    #darklabel {
+      color: var(--darklabel);
+    }
+
+    body.dark-mode {
+      --bg-color: #121212;
+      --box-bg: #1e1e1e;
+      --text-color: #f1f1f1;
+      --button-bg: #2196f3;
+      --button-hover: #1976d2;
+      --footer-color: #aaa;
+      --darklabel: #000;
+    }
+
+
 
       .container {
         overflow-y: scroll;
