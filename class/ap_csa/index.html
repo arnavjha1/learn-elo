@@ -47,7 +47,6 @@
       display: flex;
       flex-wrap: wrap;
       gap: 15px;
-      /*justify-content: center;*/
     }
     .btn {
       background-color: #4caf50;
@@ -64,11 +63,32 @@
     .btn:hover {
       background-color: #43a047;
     }
+    progress {
+      width: 100%;
+      height: 20px;
+      border-radius: 8px;
+      overflow: hidden;
+      appearance: none;
+    }
+    progress::-webkit-progress-bar {
+      background-color: #eee;
+      border-radius: 8px;
+    }
+    progress::-webkit-progress-value {
+      border-radius: 8px;
+    }
 
-    .progress-container{
-      width: 100px;
+    .btn {
       display: flex;
-      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px; /* small space between text and progress bar */
+    }
+
+    .btn progress {
+      flex-shrink: 0;
+      width: 200px; /* or whatever width fits your layout */
+      height: 20px;
     }
   </style>
 </head>
@@ -76,20 +96,16 @@
   <div class="container">
     <h1>AP Computer Science A</h1>
     <hr>
-    <h3>Your Current Progress:</h3>
+    <h3>Unit Progress:</h3>
     <div class="btn-container">
       <button class="btn" onclick="redirectTo('/unit_1/index.html')">
-        Unit 1: Java Basics & Program Structure
-        <progress value="0" max="100" id="ap_csa/unit_1/practice" style="width: 100%; height: 20px;"></progress>
+        Unit 1: Java Basics & Program Structure<progress value="0" max="100" id="ap_csa/unit_1/practice"></progress> <c id="ap_csa/unit_1/practice?label" style="font-family: 'Fira Code', 'JetBrains Mono', Consolas, 'Courier New', monospace">500</c>
       </button>
- <!-- <button class="btn" onclick="redirectTo('/class/ap_micro_macro/u3_micro')">Micro - Unit 3: Production, Cost, Perfect Competition</button>
-      <button class="btn" onclick="redirectTo('/class/ap_micro_macro/u4_micro')">Micro - Unit 4: Imperfect Competition</button>
-      <button class="btn" onclick="redirectTo('/class/ap_micro_macro/u5_micro')">Micro - Unit 5: Factor Markets</button>
-      <button class="btn" onclick="redirectTo('/class/ap_micro_macro/u6_micro')">Micro - Unit 6: Market Failure and Government Roles</button>-->
     </div>
   </div>
+
   <script>
-    const numUnits = 1; // Total number of units
+    const numUnits = 1; // total number of units
 
     function redirectTo(page) {
       window.location.href = "." + page;
@@ -98,12 +114,32 @@
     for (let i = 0; i < numUnits; i++) {
       const key = "ap_csa/unit_" + (i + 1) + "/practice";
       const storedValue = parseInt(localStorage.getItem(key));
-
-      // Default progress value
-      const progressValue = isNaN(storedValue) ? 0 : (storedValue / 3000) * 100;
-
       const progressElement = document.getElementById(key);
+
+      // Compute progress percentage
+      const progressValue = isNaN(storedValue) ? 0 : (storedValue / 3000) * 100;
       progressElement.value = progressValue;
+
+      // Determine color based on stored value
+      let color;
+      if (storedValue <= 1199) color = "red";
+      else if (storedValue <= 1799) color = "orange";
+      else if (storedValue <= 2399) color = "green";
+      else color = "blue";
+
+      document.getElementById(key + "?label").innerText = isNaN(storedValue) ? "0" : storedValue;
+
+      // Apply color to progress bar
+      progressElement.style.setProperty("--progress-color", color);
+      progressElement.style.background = `linear-gradient(to right, ${color} ${progressValue}%, #eee ${progressValue}%)`;
+
+      // For browsers supporting webkit-progress
+      const style = document.createElement("style");
+      style.textContent = `
+        #${CSS.escape(key)}::-webkit-progress-value { background-color: ${color}; }
+        #${CSS.escape(key)}::-moz-progress-bar { background-color: ${color}; }
+      `;
+      document.head.appendChild(style);
     }
   </script>
 </body>
