@@ -90,6 +90,13 @@
       width: 200px; /* or whatever width fits your layout */
       height: 20px;
     }
+
+    #stats {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 20px;
+    }
   </style>
 </head>
 <body>
@@ -102,6 +109,23 @@
         Unit 1: Java Basics & Program Structure<progress value="0" max="100" id="ap_csa/unit_1/practice"></progress> <c id="ap_csa/unit_1/practice?label" style="font-family: 'Fira Code', 'JetBrains Mono', Consolas, 'Courier New', monospace">500</c>
       </button>
     </div>
+
+    <p id="joat">Currently, you don't have any standout strengths or weaknesses.</p>
+    <div id="stats">
+      <div class="strengths">
+        <h3>Your Strengths:</h3>
+        <ul id="strengths-list">
+          <!-- Strengths will be populated here -->
+        </ul>
+      </div>
+      
+      <div class="weaknesses">
+        <h3>Your Weaknesses:</h3>
+        <ul id="weakness-list">
+          <!-- Strengths will be populated here -->
+        </ul>
+      </div>
+    </div>
   </div>
 
   <script>
@@ -110,10 +134,12 @@
     function redirectTo(page) {
       window.location.href = "." + page;
     }
-
+    
+    let sum = 0;
     for (let i = 0; i < numUnits; i++) {
       const key = "ap_csa/unit_" + (i + 1) + "/practice";
       const storedValue = parseInt(localStorage.getItem(key));
+      const storedAccuracy = parseInt(localStorage.getItem(key+"?acc"));
       const progressElement = document.getElementById(key);
 
       // Compute progress percentage
@@ -140,6 +166,7 @@
         #${CSS.escape(key)}::-moz-progress-bar { background-color: ${color}; }
       `;
       document.head.appendChild(style);
+      sum += isNaN(storedAccuracy) ? 0 : storedAccuracy;
     }
   </script>
 </body>

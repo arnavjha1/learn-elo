@@ -116,6 +116,7 @@ setInterval(progCheck, 100);
 function progCheck() {
   var progres = ar.innerHTML;
   localStorage.setItem(cache, progres);
+  localStorage.setItem(cache+"?acc", parseInt(acc.innerHTML));
   
   if (progres < 1200) {
     document.getElementById("progressBar").style.backgroundColor = "#ff2c00";
@@ -184,6 +185,7 @@ function gradeProblem(x) {
   if (x) {
     if (document.getElementById(id[questions[problem][6] - 1]).checked) {
       //They selected the correct option
+      +
       problemCorrect();
       totalProg += Math.max(parseInt(ar.innerHTML), progress);
     } else {
