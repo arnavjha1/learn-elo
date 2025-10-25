@@ -377,4 +377,7 @@ function updateRating(amount) {
   }, 500);
 
   showPopup('<h3>Tutorial - How to Use Elo Practice</h3><iframe width="560" height="315" src="https://www.youtube.com/embed/VYgirFHLwrM?si=h47XOI1EQchj7d-z" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe><br><p>For practice units, we have a database full of questions with each problem having its own problem rating, which you can view under the stats tab. As you get problems right, you will level up your rating, when you miss problems, you lose rating. As your rating gets higher and higher, the problems become more and more difficult. Problems rated above 1800 are real AP questions taken straight from past exams, so you should have plenty of practice. <strong>Consider completed practice as either you completing 25 or more questions or getting to a rating above 1800.</strong>'); 
-    
+
+if(window.innerWidth < 800){
+  document.getElementById("eloChart").style.display = "none";
+}
