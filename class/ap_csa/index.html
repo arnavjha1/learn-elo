@@ -136,7 +136,7 @@
     
     let sum = 0;
     for (let i = 0; i < numUnits; i++) {
-      const key = "ap_csa/unit_" + (i + 1) + "/practice";
+      const key = "ap_csa/unit_" + (i + 1);
       const storedValue = parseInt(localStorage.getItem(key));
       const storedAccuracy = parseInt(localStorage.getItem(key+"?acc"));
       const progressElement = document.getElementById(key);
