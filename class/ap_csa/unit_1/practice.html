@@ -160,197 +160,153 @@
   <script>
     const ratingJump = 1;
 const questions = [
-  // 1 (easy)
+  // 1 (easiest)
   [
-    "Which one of the following is NOT a correct arithmetic expression?",
-    "Option C is malformed because it places parentheses incorrectly and includes an operator after the variable name without a preceding operator. The other expressions are syntactically valid arithmetic expressions.",
-    "alpha",
-    "(alpha / momentum) - 12.4",
-    "alpha ( / momentum - 12.4 )",
-    "((alpha / momentum) - 12.4)",
-    3
+    "Which of the following is a valid int literal in Java?",
+    "Whole numbers without quotes are valid int literals; e.g., 42. Quoted numbers are Strings; 3.14 is a double; '7' is a char.",
+    "42",
+    "\"42\"",
+    "3.14",
+    "'7'",
+    1
   ],
 
   // 2
   [
-    "What does the following program output?\n<code>int totalCost = 6;\nint items = 12;\nSystem.out.println(\"cost per item: \" + totalCost/items );</code>",
-    "Both operands are integers so integer division occurs: 6/12 is 0. When concatenated with the string, the printed text is \"cost per item: 0\".",
-    "cost per item: .5",
-    "cost per item: 0",
-    "cost per item: 1",
-    "cost per item: +6/12",
+    "Which literal denotes a double?",
+    "A decimal point with digits (e.g., 2.0) is a double by default.",
+    "2",
+    "2.0",
+    "'2'",
+    "\"2\"",
     2
   ],
 
   // 3
   [
-    "Which of the following statements contains an error that will be caught by the compiler?",
-    "Choice A has missing commas/semicolons between declarations (`int x, y = 7 z = -1;` is invalid). The other lines are valid (B uses % correctly, C declares a final int, D uses a valid char literal, E uses a valid String).",
-    "int x, y = 7 z = -1;",
-    "z = x % y;",
-    "final int nums = 13;",
-    "char letter = 'D';",
-    1
+    "Which of these is a boolean literal?",
+    "Java has exactly two boolean literals: true and false (lowercase).",
+    "True",
+    "FALSE",
+    "true",
+    "\"false\"",
+    3
   ],
 
   // 4
   [
-    "What is the output of the following statement? (a \"b\" denotes a blank space)\n<code>System.out.println(EasyFormat.format(5.37, 5, 1));</code>\n(Assume EasyFormat rounds to one decimal place and pads to width 5 with leading blanks.)",
-    "Rounding 5.37 to 1 decimal gives 5.4. Width 5 with leading blanks will add two blanks before '5.4' (because '  5.4' has length 5). So the visible output starts with two blanks then 5.4.",
-    "5.4",
-    "b5.3",
-    "b5.4",
-    "bb5.4",
-    4
+    "Which of these is a valid char literal?",
+    "A char is a single character in single quotes, e.g., 'A'.",
+    "'AB'",
+    "\"A\"",
+    "'A'",
+    "A",
+    3
   ],
 
   // 5
   [
-    "Use these declarations: <code>int a = 1, b = 2, c = 3, d;</code>\nWhat is the value of <code>d</code> after:\n<code>d = 2 - (b + c) % c * 8 / (a + 3);</code>",
-    "Compute stepwise: (b + c) = 5. Then 5 % c (3) = 2. Then 2 * 8 = 16. (a + 3) = 4. Then 16 / 4 = 4 (integer division). Finally 2 - 4 = -2. So d = -2.",
-    "0",
-    "1",
-    "-1",
-    "-2",
-    4
+    "What is the value of 7 / 2 with int arithmetic?",
+    "Integer division truncates toward zero: 7 / 2 = 3.",
+    "3",
+    "3.5",
+    "4",
+    "2",
+    1
   ],
 
   // 6
   [
-    "With <code>int a = 1, b = 2, c = 3, d;</code> and <code>double x, y;</code> which of the following evaluate to the same result?\nI. <code>d = 2 + 4;</code>\nII. <code>d = (int)(2.3 + 4.6);</code>\nIII. <code>d = (int)(2.5 + 4.6);</code>",
-    "I: 2+4 = 6. II: 2.3+4.6 = 6.9 -> (int)6.9 = 6. III: 2.5+4.6 = 7.1 -> (int)7.1 = 7. So I and II are both 6; III gives 7. Thus I and II only match.",
-    "I and II only",
-    "I and III only",
-    "II and III only",
-    "I, II and III",
-    1
+    "What is the value of 7 % 2?",
+    "7 divided by 2 leaves remainder 1, so 7 % 2 == 1.",
+    "0",
+    "1",
+    "2",
+    "3",
+    2
   ],
 
   // 7
   [
-    "Which of the following expressions evaluates to 3? (with <code>int a=1, b=2, c=3</code>)",
-    "Evaluate: a) c % b = 3 % 2 = 1. b) 6 % c + b = (6 % 3) + 2 = 0 + 2 = 2. c) c / b + b = (3/2) + 2 = 1 + 2 = 3. d) a + c = 1 + 3 = 4. So option C is 3.",
-    "c % b",
-    "6 % c + b",
-    "c / b + b",
-    "a + c",
-    3
+    "Which expression produces a double result?",
+    "If either operand is a double, the result is a double. 7.0 / 2 yields a double.",
+    "7 / 2",
+    "7.0 / 2",
+    "(int)(7.0) / 2",
+    "7 / (int)2.0",
+    2
   ],
 
   // 8
   [
-    "What is the numerical value of the following expression?\n<code>Math.abs(Math.sqrt(16) - Math.pow(3,2))</code>",
-    "Compute sqrt(16) = 4. pow(3,2) = 9. 4 - 9 = -5. abs(-5) = 5.",
-    "5",
-    "-5",
-    "4",
-    "0",
-    1
+    "What prints?  System.out.println(\"Score: \" + 5 + 3);",
+    "String concatenation is left-to-right: \"Score: \" + 5 -> \"Score: 5\"; then + 3 -> \"Score: 53\".",
+    "Score: 8",
+    "Score: 53",
+    "Score: 5 + 3",
+    "Score: 5 3",
+    2
   ],
 
   // 9
   [
-    "Which of the following assignments does NOT leave <code>x</code> with a value of 0.7? (<code>double x;</code>)",
-    "Evaluate each: a) 7.0/10 = 0.7; b) (double)7/10 = 7.0/10 = 0.7; c) (double)(7/10) -> (7/10) is integer division = 0, then (double)0 = 0.0 (NOT 0.7); d) 7/10.0 = 0.7; e) 7.0/10.0 = 0.7. So option C does NOT produce 0.7.",
-    "x = 7.0 / 10;",
-    "x = (double)7 / 10;",
-    "x = (double)(7 / 10);",
-    "x = 7 / 10.0;",
-    3
+    "What prints?  System.out.println(\"Score: \" + (5 + 3));",
+    "Parentheses force arithmetic first: 5 + 3 = 8, then concatenated -> \"Score: 8\".",
+    "Score: 53",
+    "Score: 8",
+    "Score: 5 + 3",
+    "Score: 5 3",
+    2
   ],
 
   // 10
   [
-    "Which of the following shows a correct use of the Student class constructor?\n(Assume class Student has constructors that accept either three scores or name+three scores.)\nI. <code>Student s = new Student(32, 67, 81);</code>\nII. <code>Student s = new Student(32, 67, 81, \"Elaine\");</code>\nIII. <code>Student s = new Student(\"Sara\", 32, 67, 81);</code>",
-    "Typical constructors either take scores in order or take name then scores. I matches a three-score constructor. II has wrong order if constructor expects name first; III matches name-first. Without knowing exact API, the safe correct uses are I and III if a name-first constructor exists; many class designs accept name first. Given the example, III and I are valid in common designs — but the sample answer expects II and III only if there is a 4-parameter constructor with name last. To match the example provided earlier, II and III were provided together; here we choose the realistic common set: I and III are common patterns. (Answer: I and III.)",
-    "I only",
-    "II only",
-    "III only",
-    "I and III",
-    4
+    "Which of the following will NOT compile?",
+    "Assigning a double literal to an int without a cast is illegal: int x = 3.7; won’t compile.",
+    "double d = 3.7;",
+    "int x = 3.7;",
+    "char c = 'Z';",
+    "boolean b = false;",
+    2
   ],
 
   // 11
   [
-    "Assume <code>Student s = new Student();</code> Which of the following contains a syntax error using the Student class?",
-    "a) <code>double avg = s.getAverage(2);</code> — may be valid if such method exists. b) <code>s.setScore(3, 85);</code> — valid if setScore(index,value) exists. c) <code>s.setName(\"Amy\");</code> — valid setter. d) <code>System.out.println(s);</code> — valid (calls toString). e) <code>int score = s.getScore(1);</code> — valid if getScore exists. Given the common Student API, option A is suspicious because getAverage might take no parameters; however the example earlier flagged A as wrong. To match the provided example, option A is considered incorrect usage.",
-    "double avg = s.getAverage(2);",
-    "s.setScore(3, 85);",
-    "s.setName(\"Amy\");",
-    "System.out.println(s);",
-    1
+    "Given int a = 4; what is a after a += 3 * 2; ?",
+    "3*2 = 6; a += 6 -> a becomes 10.",
+    "7",
+    "10",
+    "12",
+    "14",
+    2
   ],
 
-  // 12 (easy)
+  // 12
   [
-    "Which literal denotes a double in Java?",
-    "A numeric literal with a decimal point is a double by default (e.g., 3.14).",
-    "3.14",
-    "3.14f",
-    "3",
-    "\"3.14\"",
-    1
+    "Given double x = 6; int y = 4; what is x / y?",
+    "Mixed types promote to double: 6.0 / 4 = 1.5 (double).",
+    "1",
+    "1.5",
+    "2",
+    "2.0",
+    2
   ],
 
   // 13
   [
-    "What is printed by <code>System.out.println(\"1\" + 2 + 3);</code> ?",
-    "String concatenation proceeds left to right: \"1\" + 2 => \"12\"; then \"12\" + 3 => \"123\".",
-    "6",
-    "123",
-    "15",
-    "1 2 3",
+    "Which expression is equivalent to a = a + 1; for an int a?",
+    "Post-increment a++; pre-increment ++a; both add one to a.",
+    "a--",
+    "a++",
+    "a -= 1",
+    "a = a - 1",
     2
   ],
 
   // 14
   [
-    "Which of these is NOT a Java primitive type?",
-    "Java primitives: byte, short, int, long, float, double, char, boolean. String is a reference type.",
-    "int",
-    "double",
-    "String",
-    "char",
-    3
-  ],
-
-  // 15
-  [
-    "What is the result of <code>17 % 5</code> in Java?",
-    "17 divided by 5 has remainder 2, so 17 % 5 == 2.",
-    "1",
-    "2",
-    "3",
-    "4",
-    2
-  ],
-
-  // 16
-  [
-    "Given <code>double avg = (5 + 10 + 15) / 3;</code> what will print?",
-    "All literals are ints so integer division occurs first: (30) / 3 = 10 (int), then assigned to double gives 10.0.",
-    "10",
-    "10.0",
-    "10.333333333333334",
-    "0",
-    2
-  ],
-
-  // 17
-  [
-    "What does <code>System.out.print</code> do differently than <code>System.out.println</code>?",
-    "<code>System.out.print</code> prints without appending a newline; <code>println</code> appends a newline after the output.",
-    "print adds a newline, println doesn't",
-    "print doesn't add newline, println does",
-    "both are identical",
-    "print flushes buffer, println doesn't",
-    2
-  ],
-
-  // 18
-  [
-    "Given <code>int a = 2; int b = a++;</code> what are values printed by <code>System.out.println(a + \",\" + b);</code> ?",
-    "Post-increment assigns the old value to b, then increments a. So b gets 2, a becomes 3. Prints \"3,2\".",
+    "What is printed? int a = 2; int b = a++; System.out.println(a + \",\" + b);",
+    "Post-increment assigns old value to b, then increments a: prints 3,2.",
     "2,2",
     "3,2",
     "2,3",
@@ -358,358 +314,403 @@ const questions = [
     2
   ],
 
+  // 15
+  [
+    "Which comparison is true for int x = 7; int y = 7;",
+    "x == y compares values; it is true here.",
+    "x == y",
+    "x > y",
+    "x < y",
+    "x != y",
+    1
+  ],
+
+  // 16
+  [
+    "What is (int)(3.9)?",
+    "Casting from double to int truncates toward zero: (int)3.9 == 3.",
+    "3",
+    "4",
+    "3.0",
+    "Compilation error",
+    1
+  ],
+
+  // 17
+  [
+    "What is Math.abs(-7)?",
+    "abs returns the non-negative magnitude; abs(-7) = 7.",
+    "-7",
+    "7",
+    "0",
+    "1",
+    2
+  ],
+
+  // 18
+  [
+    "What is Math.sqrt(16) + Math.pow(2,3)?",
+    "sqrt(16)=4.0; pow(2,3)=8.0; sum = 12.0.",
+    "8.0",
+    "12.0",
+    "10.0",
+    "6.0",
+    2
+  ],
+
   // 19
   [
-    "Which declaration will produce a compile-time error?",
-    "Assigning a double literal directly to int without cast is illegal: <code>int x = 3.7;</code> is invalid.",
-    "double x = 3.7;",
-    "int x = 3.7;",
-    "int x = (int)3.7;",
-    "long l = 100L;",
+    "What prints? System.out.println('A' + 1);",
+    "char 'A' promotes to its int code (65). 65 + 1 = 66; println prints 66.",
+    "A1",
+    "66",
+    "B",
+    "Compilation error",
     2
   ],
 
   // 20
   [
-    "What is printed by:\n<code>int a = 5; int b = a++; int c = ++a; System.out.println(a + \",\" + b + \",\" + c);</code>",
-    "Start a=5. b = a++ => b=5, a becomes 6. c = ++a => a becomes 7 then c=7. Final a=7, b=5, c=7 => \"7,5,7\".",
-    "6,5,6",
-    "7,5,7",
-    "5,6,7",
-    "7,6,5",
+    "What is the type of the expression 'A' + 1?",
+    "A char in arithmetic promotes to int; result is an int.",
+    "char",
+    "int",
+    "double",
+    "String",
     2
   ],
 
-  // 21 (medium)
+  // 21
   [
-    "If <code>String s = null;</code> what does <code>System.out.println(s);</code> print?",
-    "println prints the text \"null\" when given a null reference (it does not throw an exception).",
-    "It throws a NullPointerException",
-    "It prints an empty line",
-    "It prints the text 'null'",
-    "It prints \"\" (empty string)",
-    3
+    "Which expression evaluates to true? int a=5, b=10;",
+    "5 * 2 == 10 so a * 2 == b is true.",
+    "a == b",
+    "a * 2 == b",
+    "a > b",
+    "a + b < b",
+    2
   ],
 
   // 22
   [
-    "What does <code>s.indexOf('z')</code> return if 'z' is not found in s?",
-    "indexOf returns -1 to indicate the character/substring was not found.",
-    "0",
-    "-1",
-    "NullPointerException",
-    "length of s",
-    2
+    "What prints? System.out.println(\"Result: \" + (7/2));",
+    "7/2 with ints is 3; concatenation prints \"Result: 3\".",
+    "Result: 3",
+    "Result: 3.5",
+    "Result: 7/2",
+    "Result: 3 ",
+    1
   ],
 
   // 23
   [
-    "Which method returns the number of characters in a String <code>s</code>?",
-    "Use <code>s.length()</code> (note: arrays use length without parentheses).",
-    "s.size()",
-    "s.length()",
-    "s.count()",
-    "s.length",
-    2
+    "What prints? System.out.println(\"Result: \" + 7/2);",
+    "Left-to-right: \"Result: \" + 7 -> \"Result: 7\" (String). Then String / 2 is invalid? No—Java applies + before /. Actually + and / have different precedence: / applies before +. So 7/2 computes first (=3), then \"Result: \" + 3 -> \"Result: 3\".",
+    "Result: 3",
+    "Result: 3.5",
+    "Compilation error",
+    "Result: 7/2",
+    1
   ],
 
   // 24
   [
-    "Which is the correct way to compare two String objects for textual equality?",
-    "Use <code>s1.equals(s2)</code>. Using <code>==</code> compares references, not contents.",
-    "s1 == s2",
-    "s1.equals(s2)",
-    "s1.compareTo(s2) == -1",
-    "Objects.equals(s1, s2)",
+    "What is (double)(7/2)?",
+    "7/2 is computed first as int -> 3; cast to double gives 3.0.",
+    "3.5",
+    "3.0",
+    "3",
+    "7.0/2",
     2
   ],
 
   // 25
   [
-    "What will this print?\n<code>System.out.println(\"A\" + (1 + 2));</code>",
-    "Parentheses cause 1+2 to be computed first = 3, then concatenated with \"A\" -> \"A3\".",
-    "A12",
-    "A3",
-    "3A",
-    "A(1+2)",
-    2
+    "What is 7/2.0?",
+    "At least one operand is double; result is 3.5 (double).",
+    "3",
+    "3.0",
+    "3.5",
+    "4",
+    3
   ],
 
   // 26
   [
-    "Which conversion will truncate fractional part rather than round? For example, what is <code>(int)9.8</code>?",
-    "Casting a double to int truncates toward zero, so (int)9.8 becomes 9.",
-    "It rounds to 10",
-    "It becomes 9",
-    "It throws an exception",
-    "It becomes 0",
+    "Which line compiles and sets x to 0.7 exactly as a double?",
+    "7.0/10 is a double division -> 0.7.",
+    "double x = (double)(7/10);",
+    "double x = 7.0 / 10;",
+    "double x = (int)7 / 10;",
+    "double x = 7 / 10;",
     2
   ],
 
   // 27
   [
-    "What is the output of <code>int x = 7; int y = 2; System.out.println(x / y);</code>?",
-    "Both are ints so integer division yields 3 (remainder dropped).",
-    "3.5",
+    "Given int n = 15; what is n % 4?",
+    "15 = 3*4 + 3; remainder is 3.",
+    "2",
     "3",
     "4",
-    "Compilation error",
+    "1",
     2
   ],
 
   // 28
   [
-    "Which expression yields a double result when mixing types (e.g., <code>7.0 / 2</code>)?",
-    "If any operand is double, the division is double and yields a double value.",
-    "int",
-    "double",
-    "float",
-    "long",
+    "What prints? int a=5; System.out.println(++a);",
+    "Pre-increment increments then uses the value: prints 6.",
+    "5",
+    "6",
+    "Compilation error",
+    "Undefined",
     2
   ],
 
   // 29
   [
-    "Given <code>final int[] arr = {1,2,3};</code> can you later do <code>arr[0] = 5;</code> ?",
-    "final prevents reassignment of the reference but does not make the array contents immutable. You can change elements.",
-    "No — arr contents are frozen",
-    "Yes — you can change arr[0], but not reassign arr itself",
-    "Only if arr is static",
-    "Only with reflection",
+    "Which expression is true for boolean b = false;",
+    "!b negates false -> true.",
+    "b",
+    "!b",
+    "b && true",
+    "b || false",
     2
   ],
 
   // 30
   [
-    "What is the value of <code>a</code> after: <code>int a = 4; a *= 3 + 1;</code> ?",
-    "Right side evaluated first: 3+1 = 4. Then a *= 4 => a = 4 * 4 = 16.",
-    "8",
-    "12",
-    "16",
-    "20",
+    "What prints? System.out.println(\"\\\"Hi\\\"\");",
+    "Escaped quotes print a double-quoted Hi: \"Hi\".",
+    "Hi",
+    "\\\"Hi\\\"",
+    "\"Hi\"",
+    "Compilation error",
     3
   ],
 
-  // 31 (harder)
+  // 31 (start harder)
   [
-    "Which of the following assignments will produce the value 0.7 in a double <code>x</code> variable? (Pick the one that does NOT produce 0.7)\nA: <code>x = 7.0 / 10;</code>\nB: <code>x = (double)7 / 10;</code>\nC: <code>x = (double)(7 / 10);</code>\nD: <code>x = 7 / 10.0;</code>",
-    "A yields 0.7, B yields 0.7, C performs int division 7/10 = 0 then cast => 0.0 (so NOT 0.7), D yields 0.7. So C is the one that does NOT produce 0.7.",
-    "A",
-    "B",
-    "C",
-    "D",
-    3
+    "Evaluate: (int)(2.3 + 4.6) == (int)2.3 + (int)4.6",
+    "Left: 2.3+4.6=6.9 -> (int)6.9=6. Right: (int)2.3=2 and (int)4.6=4, 2+4=6. They are equal (6==6).",
+    "true",
+    "false",
+    "Compilation error",
+    "Depends on platform",
+    1
   ],
 
   // 32
   [
-    "Consider <code>int a=1, b=2, c=3;</code> Evaluate: <code>2 - (b + c) % c * 8 / (a + 3)</code>. Which step causes integer truncation?",
-    "All operations are integer ops; division 16/4 = 4 has no truncation here, but integer arithmetic throughout means no fractional values arise. The modulo yields integer residue. The important point: everything is integer so final result is integer -2.",
-    "The modulo operation",
-    "The multiplication",
-    "The integer division",
-    "There is no truncation because all are ints",
-    3
+    "What is Math.max( Math.min(4, 9), 6 )?",
+    "min(4,9)=4; max(4,6)=6.",
+    "4",
+    "6",
+    "9",
+    "13",
+    2
   ],
 
   // 33
   [
-    "Which of these code samples will throw an InputMismatchException when using Scanner sc on wrong input?",
-    "Calling sc.nextInt() on non-integer tokens throws InputMismatchException.",
-    "sc.nextInt() when next token is 'five'",
-    "sc.nextLine() when next token is 'five'",
-    "sc.next() when next token is 'five'",
-    "sc.hasNext() when next token is 'five'",
-    1
+    "Given int x = 10; System.out.println( x += x / 4 ); what prints?",
+    "x/4 = 2 (int). x += 2 -> x=12, prints 12.",
+    "10",
+    "12",
+    "2",
+    "2.5",
+    2
   ],
 
   // 34
   [
-    "Given <code>int a = 7; int b = 2; System.out.println((double)(a / b));</code>, what prints?",
-    "a/b is integer division -> 3. Then cast to double yields 3.0 (no fractional part). To get 3.5 you must cast before division.",
-    "3.5",
-    "3.0",
-    "3",
+    "What prints? char c = 'A'; System.out.println( (char)(c + 2) );",
+    "'A' is 65; 65+2=67; (char)67 is 'C'.",
+    "A2",
+    "B",
+    "C",
     "Compilation error",
-    2
+    3
   ],
 
   // 35
   [
-    "Which statement about <code>final</code> variables is true?",
-    "A final reference cannot be reassigned; for mutable objects the contents may still change. Attempts to assign a new value to a final variable cause compile-time errors.",
-    "final variables are mutable at runtime",
-    "You can reassign a final variable once",
-    "You cannot reassign a final variable after initialization",
-    "final makes a variable private",
+    "Which is true about mixed-type division?",
+    "If either operand is double, result is double; otherwise int division occurs.",
+    "The result type is always int",
+    "The result type is always double",
+    "Result type depends on operand types; a double operand makes the result double",
+    "Java rounds to nearest int automatically",
     3
   ],
 
   // 36
   [
-    "What is printed by <code>System.out.println(\"1\" + (2 * 3));</code> ?",
-    "2*3 = 6 then concatenated with \"1\" gives \"16\".",
-    "123",
-    "1 6",
-    "16",
-    "1(6)",
+    "What is the range of Math.random()?",
+    "Math.random() returns a double in [0.0, 1.0).",
+    "[0.0, 1.0]",
+    "(0.0, 1.0]",
+    "[0.0, 1.0)",
+    "(0.0, 1.0)",
     3
   ],
 
   // 37
   [
-    "Which of these casts will produce 2 from the expression <code>5 / 2</code> when assigning to an int?",
-    "If you do (int)(5.0/2.0) you get 2 (because 2.5 truncated to 2). If you perform integer division 5/2 you also get 2. But (int)(5/2) is redundant — 5/2 already 2.",
-    "int x = 5 / 2;",
-    "int x = (int)(5 / 2);",
-    "int x = (int)(5.0 / 2.0);",
-    "All of the above produce 2",
-    4
+    "Which expression yields a random int from 0 to 9 inclusive?",
+    "Multiply by 10 and cast: (int)(Math.random()*10).",
+    "(int)Math.random() * 10",
+    "(int)(Math.random()*10)",
+    "1 + (int)(Math.random()*10)",
+    "(int)(Math.random()*9) + 1",
+    2
   ],
 
   // 38
   [
-    "What is the output of the code?\n<code>int a = 2; int b = 3; System.out.println(a + b + \" is the sum\");</code>",
-    "a+b evaluated left to right: 2+3 =5 then concatenated with string -> \"5 is the sum\".",
-    "23 is the sum",
-    "5 is the sum",
-    "a b is the sum",
-    "Compilation error",
+    "Which prints an int from 5 to 9 inclusive?",
+    "Scale to 5 values (0–4) then shift by +5: 5 + (int)(Math.random()*5).",
+    "5 + (int)(Math.random()*4)",
+    "5 + (int)(Math.random()*5)",
+    "4 + (int)(Math.random()*5)",
+    "(int)(Math.random()*5)",
     2
   ],
 
   // 39
   [
-    "Which of these causes a compile error: <code>char c = 'D';</code>, <code>char d = \"D\";</code>, <code>String s = \"D\";</code>?",
-    "Chars use single quotes. Double quotes denote String. So <code>char d = \"D\";</code> is invalid.",
-    "char c = 'D';",
-    "char d = \"D\";",
-    "String s = \"D\";",
-    "All are valid",
-    2
+    "Evaluate: (int)(-3.7) and (int)(3.7)",
+    "Both truncate toward zero: -3.7 -> -3; 3.7 -> 3.",
+    "-4 and 3",
+    "-3 and 4",
+    "-4 and 4",
+    "-3 and 3",
+    4
   ],
 
   // 40
   [
-    "What expression computes Celsius from Fahrenheit preserving decimals? (F is a double)\nA: <code>(F - 32) * 5 / 9</code>\nB: <code>(F - 32) * 5.0 / 9</code>\nC: <code>(F - 32) * (5/9)</code>\nD: <code>F * 9/5 + 32</code>",
-    "Use 5.0 to ensure floating-point division, B is correct formula. C uses integer 5/9 = 0 leading to 0 result. D is Fahrenheit-from-Celsius, not Celsius.",
-    "A",
-    "B",
-    "C",
-    "D",
-    2
+    "What is the value of the boolean expression: !(true && false) || (3 * 2 == 6)",
+    "true && false is false; !false is true; true || (anything) is true.",
+    "true",
+    "false",
+    "Compilation error",
+    "Depends on short-circuit",
+    1
   ],
 
-  // 41 (hard)
+  // 41
   [
-    "Given <code>int a = 1, b = 2, c = 3;</code> what is the value of <code>d</code> after <code>d = (int)(2.5 + 4.6);</code> ?",
-    "2.5 + 4.6 = 7.1; casting to int truncates fractional part -> 7.",
-    "6",
-    "7",
-    "8",
-    "Compilation error",
+    "Given int a=7, b=3; what is a/b + a% b?",
+    "a/b=2, a%b=1; sum = 3 (a = b*q + r relationship).",
+    "2",
+    "3",
+    "4",
+    "1",
     2
   ],
 
   // 42
   [
-    "Which of the following will reliably print two decimal places for a double value <code>v</code> (e.g., 3.50)?",
-    "Use <code>System.out.printf(\"%.2f\", v);</code> or <code>String.format(\"%.2f\", v)</code>. printf is the direct printing method.",
-    "System.out.println(v);",
-    "System.out.printf(\"%.2f\", v);",
-    "System.out.println(String.valueOf(v).substring(0,4));",
-    "System.out.print(v + \"00\");",
-    2
+    "Which is equivalent to a *= b + 2 for int a, b?",
+    "Right-hand side evaluated first, then multiply-assign: a = a * (b + 2).",
+    "a = a * b + 2",
+    "a = (a * b) + 2",
+    "a = a * (b + 2)",
+    "a = (a + 2) * b",
+    3
   ],
 
   // 43
   [
-    "Which expression results in the integer 1 given <code>int x = 5;</code> ?",
-    "Using modulus: 5 % 2 = 1.",
-    "x / 5",
-    "x % 2",
-    "x - 4",
-    "Both B and C",
-    4
+    "What prints? double d = 2.5; System.out.println((int)d + d);",
+    "(int)d is 2; 2 + 2.5 -> 4.5 (double).",
+    "4",
+    "4.0",
+    "4.5",
+    "2.52",
+    3
   ],
 
   // 44
   [
-    "What does this print?\n<code>double r = Math.sqrt(25); System.out.println((int)r);</code>",
-    "sqrt(25) = 5.0; casting to int prints 5.",
-    "5.0",
-    "5",
-    "25",
-    "Compilation error",
+    "Which is true about operator precedence?",
+    "Multiplication/division/modulo > addition/subtraction; parentheses override.",
+    "Addition has higher precedence than multiplication",
+    "Multiplication and division have higher precedence than addition",
+    "All have the same precedence",
+    "Precedence is random",
     2
   ],
 
   // 45
   [
-    "Which of these will NOT compile?\nA: <code>int[] a = new int[5];</code>\nB: <code>int a[] = {1,2,3};</code>\nC: <code>int a = new int[5];</code>\nD: <code>int[] b = { }</code>",
-    "C tries to assign an array to a single int variable; that's a type mismatch. D is legal (empty initializer array).",
-    "A",
-    "B",
-    "C",
-    "D",
-    3
+    "What is Math.round(2.49) and Math.round(2.5)?",
+    "round returns long, rounding half up: 2.49 -> 2; 2.5 -> 3.",
+    "2 and 2",
+    "2 and 3",
+    "3 and 3",
+    "3 and 2",
+    2
   ],
 
   // 46
   [
-    "Which of the following expressions is evaluated left-to-right because of operator associativity (for + and -)?",
-    "Addition and subtraction are left associative. So expression like a - b + c is evaluated (a - b) + c.",
-    "a - b + c",
-    "a + (b - c)",
-    "a * b / c",
-    "a % (b + c)",
-    1
+    "Evaluate: (int)(Math.random()*10) == 10",
+    "(int)(x) for x in [0.0,10.0) yields 0..9; it can never be 10.",
+    "Always true",
+    "Always false",
+    "True about 10% of the time",
+    "Depends on rounding mode",
+    2
   ],
 
   // 47
   [
-    "What is the output of: <code>System.out.println(\"\\\"Hello\\\"\");</code> ?",
-    "Escape sequences: backslash+quote prints a literal double quote. So output: \"Hello\"",
-    "Hello",
-    "\"Hello\"",
-    "\\\"Hello\\\"",
-    "Compilation error",
+    "What prints? System.out.println(\"Sum=\" + 2 + 3 * 4);",
+    "3*4 = 12 first; then \"Sum=\" + 2 -> \"Sum=2\"; then + 12 -> \"Sum=212\".",
+    "Sum=14",
+    "Sum=212",
+    "Sum=2 + 12",
+    "Sum=2*12",
     2
   ],
 
   // 48
   [
-    "Given <code>double a = 0.1 + 0.2;</code> which is true about comparing to 0.3 using <code>==</code> ?",
-    "Floating point rounding means 0.1+0.2 may not exactly equal 0.3; using == can be false. Best practice is compare with epsilon.",
-    "It will always be true",
-    "It might be false due to floating point rounding",
-    "It throws an exception",
-    "Java rounds so it becomes exactly 0.3",
+    "Which expression is closest to 0.1 + 0.2 in Java doubles?",
+    "Due to binary floating-point, 0.1 + 0.2 is not exactly 0.3; it’s approximately 0.30000000000000004.",
+    "Exactly 0.3",
+    "Slightly larger than 0.3",
+    "Slightly smaller than 0.3",
+    "Exactly 0.4",
     2
   ],
 
-  // 49 (very hard)
+  // 49
   [
-    "Which sequence will set the first character of a String variable <code>s</code> to 'X' (assuming mutable structure)?",
-    "Strings are immutable; you must create a new String. Example: <code>s = 'X' + s.substring(1);</code> (use double quotes in Java). Direct assignment s.charAt(0) = 'X' is illegal.",
-    "<code>s.charAt(0) = 'X';</code>",
-    "<code>s = 'X' + s.substring(1);</code>",
-    "<code>s[0] = 'X';</code>",
-    "<code>String.setCharAt(s,0,'X');</code>",
-    2
+    "What prints? int a=5; System.out.println(a++ + ++a);",
+    "Start a=5. a++ yields 5 then a becomes 6; ++a makes a 7 then yields 7; 5+7=12; prints 12 (final a is 7).",
+    "10",
+    "11",
+    "12",
+    "13",
+    3
   ],
 
-  // 50 (most difficult)
+  // 50 (hardest)
   [
-    "Which of these best describes why integer division and floating division differ in Java and how to ensure floating-point result when dividing two integers?",
-    "Integer arithmetic discards remainder; to get floating result cast at least one operand to double (e.g., (double)a / b) or use a decimal literal. That forces floating-point division.",
-    "Integer division always returns decimal result",
-    "Use Math.divide(a,b) to get double",
-    "Cast at least one operand to double (e.g., (double)a / b) or use 5.0 instead of 5 to force floating division",
-    "Use / but append .0 to result after division",
+    "Assume int a=8, b=3; What is the value of (double)(a/b) + (a/(double)b) ?",
+    "a/b is 2 (int), cast to double -> 2.0. a/(double)b is 8/3.0 -> 2.666..., sum ≈ 4.6666666667.",
+    "4.0",
+    "4.3333333333",
+    "4.6666666667 (approximately)",
+    "5.0",
     3
   ]
 ];
+
 let array = [
   [-1, 300], // 0
   [-11, 290], // 100
