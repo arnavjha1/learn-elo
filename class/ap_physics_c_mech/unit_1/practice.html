@@ -1,0 +1,1099 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Dynamic Progress Bar</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap"
+      rel="stylesheet"
+    />
+    <!-- Include Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <style>
+      /* Global Styles */
+      body {
+        margin: 0;
+        padding: 0;
+        font-family: "Roboto", sans-serif;
+        background: linear-gradient(135deg, #83a4d4, #b6fbff);
+        color: #333;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        min-height: 100vh;
+      }
+    #darklabel {
+      color: var(--darklabel);
+    }
+
+    body.dark-mode {
+      --bg-color: #121212;
+      --box-bg: #1e1e1e;
+      --text-color: #f1f1f1;
+      --button-bg: #2196f3;
+      --button-hover: #1976d2;
+      --footer-color: #aaa;
+      --darklabel: #000;
+    }
+
+
+
+      .container {
+        overflow-y: scroll;
+        position: fixed;
+        top: 20px;
+        bottom: 20px;
+        background: #fff;
+        max-width: 800px;
+        width: 90%;
+        padding: 30px;
+        border-radius: 15px;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+      }
+      /* Chart Styles */
+      #eloChart {
+        margin-bottom: 20px;
+      }
+      /* Progress Bar Styles */
+      .progress-container {
+        width: 100%;
+        background-color: #e0e0e0;
+        border-radius: 25px;
+        overflow: hidden;
+        margin-bottom: 20px;
+      }
+      .progress-bar {
+        width: 0;
+        height: 30px;
+        text-align: center;
+        line-height: 30px;
+        color: white;
+        transition: width 1s ease;
+      }
+      #progressBar {
+        background-color: #ff2c00;
+        transition: width 1s ease, background-color 1.5s ease;
+      }
+      /* Content Styles */
+      h1 {
+        font-size: 2em;
+        margin-bottom: 10px;
+        text-align: center;
+      }
+      h2 {
+        text-align: center;
+      }
+      h4 {
+        font-weight: 500;
+      }
+      .question,
+      .option,
+      .solution {
+        margin-bottom: 15px;
+      }
+      .option input[type="radio"] {
+        margin-right: 10px;
+      }
+      button {
+        background-color: #4caf50;
+        color: #fff;
+        border: none;
+        padding: 10px 20px;
+        font-size: 1em;
+        border-radius: 5px;
+        cursor: pointer;
+        margin-right: 10px;
+        transition: background-color 0.3s ease;
+      }
+      button:hover {
+        background-color: #43a047;
+      }
+      /* Visibility Settings */
+      #problemOptions {
+        display: block;
+      }
+      #solutionOptions {
+        display: none;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <!-- Progress Bar -->
+      <div class="progress-container" id="pro">
+        <div class="progress-bar" id="progressBar">0%</div>
+      </div>
+      <h1>Unit 1 Practice</h1>
+      <div class="question">
+        <h4>
+          <span id="problem">Issue loading question (check console)</span>
+        </h4>
+      </div>
+      <div class="option">
+        <input type="radio" name="gender" id="option0" /><span id="o1"></span
+        ><br />
+        <input type="radio" name="gender" id="option1" /><span id="o2"></span
+        ><br />
+        <input type="radio" name="gender" id="option2" /><span id="o3"></span
+        ><br />
+        <input type="radio" name="gender" id="option3" /><span id="o4"></span
+        ><br />
+        <input type="radio" name="gender" id="option4" /><span id="o5"></span
+        ><br />
+      </div>
+      <div id="problemOptions">
+        <button onclick="gradeProblem(true)">Submit</button>
+        <button onclick="gradeProblem(false)">See Solution</button>
+      </div>
+      <div id="solutionOptions">
+        <strong><span id="cor">Wrong!</span> This is the solution:</strong
+        ><br />
+        <span id="solution"></span><br /><br />
+        <button onclick="loadNewQuestion()">Continue</button>
+      </div>
+      <!-- Elo Progression Chart -->
+      <canvas id="eloChart" width="800" height="200"></canvas>
+      <h4>Stats</h4>
+      <ul>
+        <li>Questions Solved: <c id="qs">0</c></li>
+        <li>Problem Rating: <c id="cr">500</c></li>
+        <li>Accuracy: <c id="acc">N/A</c></li>
+        <li>Actual Rating: <c id="ar">500</c></li>
+      </ul>
+    </div>
+  <script>
+    const ratingJump = 1;
+    const questions = [
+  // 1.1 Δx, v_avg, x = v_avg*t + x0 (Q1–8)
+  //Q1
+  [
+    "An object moves from x₀ = 2.0 m to x = 11.0 m. What is Δx?",
+    "Δx = x − x₀ = 11.0 − 2.0 = 9.0 m.",
+    "2.0 m",
+    "7.0 m",
+    "9.0 m", // correct option (index 1)
+    "11.0 m",
+    3
+  ],
+  //Q2
+  [
+    "A runner covers 60 m in 10 s. What is the average velocity v_avg?",
+    "v_avg = Δx/Δt = 60 / 10 = 6.0 m/s.",
+    "4.0 m/s",
+    "5.0 m/s",
+    "6.0 m/s", // correct
+    "12.0 m/s",
+    3
+  ],
+  //Q3
+  [
+    "An object starts at x₀ = −3 m and travels with v_avg = 5 m/s for 4 s. What is x after 4 s?",
+    "x = v_avg·t + x₀ = 5×4 + (−3) = 20 − 3 = 17 m.",
+    "13 m",
+    "17 m", // correct
+    "20 m",
+    "27 m",
+    2
+  ],
+  //Q4
+  [
+    "If Δx = 45 m and Δt = 9 s, what is v_avg?",
+    "v_avg = Δx/Δt = 45 / 9 = 5.0 m/s.",
+    "9.0 m/s",
+    "5.0 m/s", // correct
+    "15.0 m/s",
+    "22.0 m/s",
+    2
+  ],
+  //Q5
+  [
+    "A particle moves at v_avg = −2 m/s for 6 s starting at x₀ = 8 m. What is x at t = 6 s?",
+    "x = v_avg·t + x₀ = (−2)(6) + 8 = −12 + 8 = −4 m.",
+    "2 m",
+    "4 m",
+    "−12 m",
+    "−4 m", // correct
+    4
+  ],
+  //Q6
+  [
+    "A car moves from x₀ = 50 m to x = 25 m. What is Δx?",
+    "Δx = 25 − 50 = −25 m.",
+    "−25 m", // correct
+    "25 m",
+    "−50 m",
+    "50 m",
+    1
+  ],
+  //Q7
+  [
+    "An object starts at x₀ = 0 m and ends at x = 84 m in 12 s. Find v_avg.",
+    "v_avg = Δx/Δt = 84 / 12 = 7.0 m/s.",
+    "6.0 m/s",
+    "7.0 m/s", // correct
+    "12.0 m/s",
+    "14.0 m/s",
+    2
+  ],
+  //Q8
+  [
+    "A ball moves with v_avg = 3 m/s for 5 s starting at x₀ = 4 m. What is x at t = 5 s?",
+    "x = v_avg·t + x₀ = 3×5 + 4 = 15 + 4 = 19 m.",
+    "4 m",
+    "10 m",
+    "15 m",
+    "19 m", // correct
+    4
+  ],
+
+  // 1.2 instantaneous velocity (dx/dt) (Q9–14)
+  //Q9
+  [
+    "Instantaneous velocity is defined by which limit expression?",
+    "v_inst = lim_{Δt→0} (Δx/Δt) — the derivative dx/dt.",
+    "Δx/Δt (finite interval)",
+    "lim(Δx/Δt) as Δt→0", // correct
+    "d²x/dt²",
+    "∫ v dt",
+    2
+  ],
+  //Q10
+  [
+    "If x(t) = 4t², what is the instantaneous velocity v(t)?",
+    "v(t) = dx/dt = d(4t²)/dt = 8t.",
+    "8t", // correct
+    "16t",
+    "8t²",
+    "2t",
+    1
+  ],
+  //Q11
+  [
+    "If x(t) = 10t, what is v_inst at any t?",
+    "v(t) = dx/dt = 10 (constant).",
+    "t",
+    "10t",
+    "10", // correct
+    "1/t",
+    3
+  ],
+  //Q12
+  [
+    "On an x–t graph, instantaneous velocity at a point equals the slope of the…",
+    "instantaneous velocity = slope of the tangent line to the curve at that point.",
+    "secant line between two points",
+    "tangent line", // correct
+    "area under the curve",
+    "average slope",
+    2
+  ],
+  //Q13
+  [
+    "If x(t) = 3t³, what is v_inst(t)?",
+    "v(t) = dx/dt = 9t².",
+    "3t²",
+    "9t²", // correct
+    "t³",
+    "6t",
+    2
+  ],
+  [
+    "Which derivative gives instantaneous velocity?",
+    "Instantaneous velocity is the first derivative of position: v = dx/dt.",
+    "dx/dt", // correct
+    "∫ x dt",
+    "d/dv",
+    "Δx/Δt for large Δt",
+    1
+  ],
+
+  // 1.3 v = v0 + a t (Q15–20)
+  [
+    "A car starts from rest (v₀ = 0) and accelerates at 2.0 m/s² for 6.0 s. What is v?",
+    "v = v₀ + a t = 0 + 2×6 = 12 m/s.",
+    "6 m/s",
+    "12 m/s", // correct
+    "18 m/s",
+    "2 m/s",
+    "24 m/s",
+    5
+  ],
+  [
+    "A bike has v₀ = 4 m/s and accelerates at 3 m/s² for 2 s. What is v?",
+    "v = 4 + 3×2 = 10 m/s.",
+    "6 m/s",
+    "10 m/s", // correct
+    "8 m/s",
+    "12 m/s",
+    "4 m/s",
+    5
+  ],
+  [
+    "An object with v₀ = 20 m/s decelerates at a = −5 m/s² for 3 s. What is v?",
+    "v = 20 + (−5)×3 = 20 − 15 = 5 m/s.",
+    "5 m/s", // correct
+    "10 m/s",
+    "15 m/s",
+    "0 m/s",
+    "−5 m/s",
+    3
+  ],
+  [
+    "A projectile is launched upward with v₀ = 30 m/s; a = −10 m/s². What is v after 2 s?",
+    "v = 30 + (−10)×2 = 10 m/s upward.",
+    "10 m/s", // correct
+    "20 m/s",
+    "−10 m/s",
+    "0 m/s",
+    "30 m/s",
+    3
+  ],
+  [
+    "A runner accelerates from v₀ = 2 m/s at a = 1 m/s² for 7 s. What is v?",
+    "v = 2 + 1×7 = 9 m/s.",
+    "7 m/s",
+    "9 m/s", // correct
+    "14 m/s",
+    "2 m/s",
+    "1 m/s",
+    5
+  ],
+  [
+    "A train slows with a = −3 m/s² from v₀ = 18 m/s for 4 s. What is v?",
+    "v = 18 + (−3)×4 = 18 − 12 = 6 m/s.",
+    "6 m/s", // correct
+    "12 m/s",
+    "0 m/s",
+    "3 m/s",
+    "18 m/s",
+    3
+  ],
+
+  // 1.4 Constant-acceleration kinematic equations (Q21–40)
+  // x = x0 + v0 t + 1/2 a t^2 (examples)
+  [
+    "x₀ = 0, v₀ = 5 m/s, a = 2 m/s², t = 4 s. Find x.",
+    "x = x₀ + v₀ t + ½ a t² = 0 + 5×4 + 0.5×2×16 = 20 + 16 = 36 m.",
+    "36 m", // correct
+    "28 m",
+    "20 m",
+    "40 m",
+    "32 m",
+    3
+  ],
+  [
+    "x₀ = −5 m, v₀ = 2 m/s, a = 3 m/s², t = 3 s. Find x.",
+    "x = −5 + 2×3 + 0.5×3×9 = −5 + 6 + 13.5 = 14.5 m (≈14.5 m).",
+    "14.5 m", // correct
+    "10 m",
+    "12 m",
+    "5 m",
+    "16 m",
+    3
+  ],
+  [
+    "x₀ = 10 m, v₀ = 0, a = 4 m/s², t = 2 s. Find x.",
+    "x = 10 + 0 + 0.5×4×4 = 10 + 8 = 18 m.",
+    "14 m",
+    "18 m", // correct
+    "22 m",
+    "26 m",
+    "12 m",
+    5
+  ],
+  [
+    "x₀ = 3 m, v₀ = 6 m/s, a = −2 m/s², t = 4 s. Find x.",
+    "x = 3 + 6×4 + 0.5×(−2)×16 = 3 + 24 − 16 = 11 m.",
+    "11 m", // correct
+    "19 m",
+    "25 m",
+    "3 m",
+    "7 m",
+    3
+  ],
+
+  // v^2 = v0^2 + 2 a (x − x0)
+  [
+    "v₀ = 0, a = 5 m/s², Δx = 8 m. Find v.",
+    "v² = 0 + 2×5×8 = 80 → v = √80 ≈ 8.944 m/s.",
+    "8 m/s",
+    "10 m/s",
+    "√80 m/s", // correct (presented as string)
+    "20 m/s",
+    "5 m/s",
+    5
+  ],
+  [
+    "v₀ = 6 m/s, a = −2 m/s², Δx = 5 m. Find v (take positive root if applicable).",
+    "v² = 36 + 2(−2)(5) = 36 − 20 = 16 → v = 4 m/s.",
+    "2 m/s",
+    "4 m/s", // correct
+    "6 m/s",
+    "8 m/s",
+    "0 m/s",
+    5
+  ],
+  [
+    "v₀ = 12 m/s, a = −4 m/s², Δx = 10 m. Find v.",
+    "v² = 144 + 2(−4)(10) = 144 − 80 = 64 → v = 8 m/s.",
+    "6 m/s",
+    "8 m/s", // correct
+    "4 m/s",
+    "10 m/s",
+    "0 m/s",
+    5
+  ],
+  [
+    "v₀ = 20 m/s, a = −2 m/s², Δx = 25 m. Find v.",
+    "v² = 400 + 2(−2)(25) = 400 − 100 = 300 → v = √300 ≈ 17.32 m/s.",
+    "10 m/s",
+    "15 m/s",
+    "√300 m/s", // correct
+    "0 m/s",
+    "20 m/s",
+    5
+  ],
+
+  // x = x0 + ½ (v0 + v) t
+  [
+    "x₀ = 0, v₀ = 2 m/s, v = 10 m/s, t = 3 s. Find x.",
+    "x = 0 + ½(2 + 10)×3 = 0.5×12×3 = 18 m.",
+    "12 m",
+    "18 m", // correct
+    "24 m",
+    "30 m",
+    "10 m",
+    5
+  ],
+  [
+    "x₀ = 3 m, v₀ = 5 m/s, v = 15 m/s, t = 3 s. Find x.",
+    "x = 3 + ½(5 + 15)×3 = 3 + 0.5×20×3 = 3 + 30 = 33 m.",
+    "25 m",
+    "33 m", // correct
+    "18 m",
+    "45 m",
+    "30 m",
+    5
+  ],
+  [
+    "x₀ = −2 m, v₀ = 0 m/s, v = 8 m/s, t = 4 s. Find x.",
+    "x = −2 + ½(0 + 8)×4 = −2 + 0.5×8×4 = −2 + 16 = 14 m.",
+    "10 m",
+    "14 m", // correct
+    "6 m",
+    "18 m",
+    "8 m",
+    5
+  ],
+  [
+    "x₀ = 10 m, v₀ = 10 m/s, v = 0 m/s, t = 2 s. Find x.",
+    "x = 10 + ½(10 + 0)×2 = 10 + 0.5×10×2 = 10 + 10 = 20 m.",
+    "15 m",
+    "20 m", // correct
+    "10 m",
+    "25 m",
+    "30 m",
+    5
+  ],
+
+  // x = x0 + v t − ½ a t^2
+  [
+    "x₀ = 0, v = 20 m/s, a = 4 m/s², t = 2 s. Find x.",
+    "x = 0 + 20×2 − 0.5×4×4 = 40 − 8 = 32 m.",
+    "24 m",
+    "32 m", // correct
+    "28 m",
+    "16 m",
+    "40 m",
+    5
+  ],
+  [
+    "x₀ = 5 m, v = 15 m/s, a = 3 m/s², t = 3 s. Find x.",
+    "x = 5 + 15×3 − 0.5×3×9 = 5 + 45 − 13.5 = 36.5 m (36.5 m).",
+    "29 m",
+    "36.5 m", // correct
+    "23 m",
+    "14 m",
+    "40 m",
+    5
+  ],
+  [
+    "x₀ = 2 m, v = 6 m/s, a = −2 m/s², t = 4 s. Find x.",
+    "x = 2 + 6×4 − 0.5×(−2)×16 = 2 + 24 + 16 = 42 m.",
+    "18 m",
+    "42 m", // correct
+    "6 m",
+    "2 m",
+    "10 m",
+    5
+  ],
+  [
+    "x₀ = −4 m, v = 12 m/s, a = −3 m/s², t = 3 s. Find x.",
+    "x = −4 + 12×3 − 0.5×(−3)×9 = −4 + 36 + 13.5 = 45.5 m.",
+    "20 m",
+    "45.5 m", // correct
+    "14 m",
+    "8 m",
+    "26 m",
+    5
+  ],
+
+  // Additional concrete constant-acceleration practice (Q33–40)
+  [
+    "x₀ = 0, v₀ = 0, a = 9.8 m/s², t = 2 s. Find x (use g = 9.8).",
+    "x = 0 + 0 + 0.5×9.8×4 = 19.6 m.",
+    "9.8 m",
+    "19.6 m", // correct
+    "39.2 m",
+    "4.9 m",
+    "29.4 m",
+    5
+  ],
+  [
+    "v₀ = 3 m/s, a = 2 m/s², t = 5 s. Using v = v₀ + at, what is v?",
+    "v = 3 + 2×5 = 13 m/s.",
+    "10 m/s",
+    "13 m/s", // correct
+    "8 m/s",
+    "15 m/s",
+    "5 m/s",
+    5
+  ],
+  [
+    "Given x₀ = 1 m, v₀ = 4 m/s, a = 1 m/s², t = 3 s, compute x using x = x₀ + v₀t + ½ a t².",
+    "x = 1 + 4×3 + 0.5×1×9 = 1 + 12 + 4.5 = 17.5 m.",
+    "17.5 m", // correct
+    "16 m",
+    "13.5 m",
+    "19 m",
+    "18.5 m",
+    3
+  ],
+  [
+    "Using v² = v₀² + 2a(x − x₀): if v₀ = 2 m/s, a = 3 m/s² and x − x₀ = 6 m, find v.",
+    "v² = 4 + 2×3×6 = 4 + 36 = 40 → v = √40 ≈ 6.3249 m/s.",
+    "6 m/s",
+    "√40 m/s", // correct
+    "8 m/s",
+    "4 m/s",
+    "10 m/s",
+    5
+  ],
+
+  // 1.5 Non-constant acceleration derivatives (Q41–45)
+  [
+    "If x(t) = t³ + 2t, what is a(t)?",
+    "v(t) = dx/dt = 3t² + 2 → a(t) = dv/dt = 6t.",
+    "3t² + 2",
+    "6t", // correct
+    "3t",
+    "t³ + 2",
+    "6t²",
+    5
+  ],
+  [
+    "If v(t) = 5t² + 1, find a(t).",
+    "a(t) = dv/dt = 10t.",
+    "5t",
+    "10t", // correct
+    "2t²",
+    "t³",
+    "1",
+    5
+  ],
+  [
+    "If a(t) = 4t, what is the general form of v(t)?",
+    "v(t) = ∫ a(t) dt = ∫ 4t dt = 2t² + C (constant of integration).",
+    "4t² + C",
+    "2t² + C", // correct
+    "t⁴ + C",
+    "8t + C",
+    "4t + C",
+    5
+  ],
+  [
+    "If a(t) = 9 (constant), what is v(t) (general)?",
+    "v(t) = ∫ 9 dt = 9t + C.",
+    "t + 9",
+    "9t + C", // correct
+    "9t² + C",
+    "C",
+    "t⁹",
+    5
+  ],
+  [
+    "If v(t) = cos t, what is a(t)?",
+    "a(t) = dv/dt = −sin t.",
+    "sin t",
+    "−sin t", // correct
+    "cos t",
+    "−cos t",
+    "t",
+    5
+  ],
+
+  // 1.6 Integrals: Δx = ∫ v dt, Δv = ∫ a dt (Q46–50)
+  [
+    "If v(t) = 6t (m/s), find Δx from t = 0 to t = 3 s.",
+    "Δx = ∫₀³ 6t dt = [3t²]₀³ = 3×9 = 27 m.",
+    "18 m",
+    "27 m", // correct
+    "36 m",
+    "54 m",
+    "9 m",
+    5
+  ],
+  [
+    "If a(t) = 4t (m/s²), find Δv from t = 1 to t = 3 s.",
+    "Δv = ∫₁³ 4t dt = [2t²]₁³ = 2(9) − 2(1) = 18 − 2 = 16 m/s.",
+    "12 m/s",
+    "16 m/s", // correct
+    "8 m/s",
+    "20 m/s",
+    "18 m/s",
+    5
+  ],
+  [
+    "If v(t) = 2t² (m/s), find Δx from t = 2 to t = 4 s.",
+    "Δx = ∫₂⁴ 2t² dt = [ (2/3)t³ ]₂⁴ = (2/3)(64 − 8) = (2/3)(56) = 112/3 ≈ 37.333 m. (Round to 37.33 or use exact).",
+    "32 m",
+    "40 m",
+    "112/3 m", // correct (≈37.33)
+    "24 m",
+    "16 m",
+    5
+  ],
+  [
+    "If a(t) = 10t² (m/s²), find v(t) (general form).",
+    "v(t) = ∫ 10t² dt = (10/3) t³ + C.",
+    "(10/3) t³ + C", // correct
+    "5 t³ + C",
+    "10 t³ + C",
+    "t¹⁰ + C",
+    "30 t² + C",
+    3
+  ],
+  [
+    "A velocity graph shows v = 8.0 m/s (constant) from t = 0 to 5 s. What is Δx over that interval?",
+    "Δx = area under velocity graph = v×Δt = 8×5 = 40 m.",
+    "8 m",
+    "16 m",
+    "20 m",
+    "40 m", // correct
+    "32 m",
+    6
+  ]
+];
+
+
+let array = [
+  [-1, 300], // 0
+  [-11, 290], // 100
+  [-21, 275], // 200
+  [-32, 260], // 300
+  [-42, 245], // 400
+  [-53, 230], // 500
+  [-64, 218], // 600
+  [-75, 207], // 700
+  [-83, 197], // 800
+  [-92, 188], // 900
+  [-101, 180], // 1000
+  [-112, 173], // 1100
+  [-125, 167], // 1200
+  [-133, 162], // 1300
+  [-144, 158], // 1400
+  [-152, 154], // 1500
+  [-161, 150], // 1600
+  [-175, 147], // 1700
+  [-183, 144], // 1800
+  [-215, 94], // 1900
+  [-242, 82], // 2000
+  [-275, 73], // 2100
+  [-302, 67], // 2200
+  [-321, 51], // 2300
+  [-349, 42], // 2400
+  [-381, 36], // 2500
+  [-418, 31], // 2600
+  [-427, 27], // 2700
+  [-431, 24], // 2800
+  [-434, 22], // 2900
+  [-436, 21], // 3000
+  [-437, 20], // 3100
+  [-437, 19], // 3200
+  [-437, 19], // 3300
+];
+
+
+// Global variables for Elo rating history and Chart instance
+let ratingHistory = [];
+let attemptCount = 0;
+
+// Preload 25 columns (labels 1 to 25)
+let initialLabels = Array.from({ length: 25 }, (_, i) => i + 1);
+
+// Initialize Chart.js line chart for Elo progression
+const ctx = document.getElementById("eloChart").getContext("2d");
+const eloChart = new Chart(ctx, {
+  type: "line",
+  data: {
+    labels: [], // preloaded with 25 columns
+    datasets: [
+      {
+        label: "Progression",
+        data: [],
+        fill: false,
+        borderColor: "blue",
+        tension: 0.1,
+      },
+    ],
+  },
+  options: {
+    scales: {
+      x: {
+        title: {
+          display: true,
+          text: "Questions Solved",
+        },
+      },
+      y: {
+        beginAtZero: true,
+        suggestedMax: 2300,
+        title: {
+          display: true,
+          text: "Rating",
+        },
+      },
+    },
+  },
+});
+
+setTimeout(preloadAttempts, 1000);
+function preloadAttempts() {
+  attemptCount = -1;
+  for (var i = 0; i < ratingHistory.length; i++) {
+    attemptCount++;
+    // If attemptCount exceeds the preloaded labels, expand the labels array
+    if (attemptCount > eloChart.data.labels.length) {
+      eloChart.data.labels.push(attemptCount);
+    } else {
+      // Otherwise, update the existing label (optional)
+      eloChart.data.labels[attemptCount - 1] = attemptCount - 1;
+    }
+    eloChart.data.datasets[0].data.push(ratingHistory[i]);
+    eloChart.update();
+  }
+  if (ratingHistory.length > 0) {
+    eloChart.data.datasets[0].data.pop();
+    eloChart.update();
+  }
+}
+
+// Function to add a new attempt data point and update labels if needed
+function addAttempt(progressValue) {
+  attemptCount++;
+  ratingHistory.push(progressValue);
+  // If attemptCount exceeds the preloaded labels, expand the labels array
+  if (attemptCount > eloChart.data.labels.length) {
+    eloChart.data.labels.push(attemptCount);
+  } else {
+    // Otherwise, update the existing label (optional)
+    eloChart.data.labels[attemptCount - 1] = attemptCount;
+  }
+  eloChart.data.datasets[0].data.push(progressValue);
+  eloChart.update();
+}
+
+let url = window.location.href;
+let cache = url.split("/class/")[1];
+let progress = 500;
+let notComingAgain = [];
+let problem = 2;
+let questionsSolved = -1;
+let totalProg = 500;
+let problemsCorrect = 0;
+let qs = document.getElementById("qs");
+let acc = document.getElementById("acc");
+let cr = document.getElementById("cr");
+let ar = document.getElementById("ar");
+
+const progressBar = document.getElementById("progressBar");
+const pro = document.getElementById("pro");
+progressBar.style.width = progress / 32 + "%";
+progressBar.textContent = Math.round(progress);
+
+// Initialize rating history with initial progress
+ratingHistory.push(progress);
+eloChart.data.labels.push(attemptCount);
+eloChart.data.datasets[0].data.push(progress);
+eloChart.update();
+
+loadNewQuestion();
+setInterval(progCheck, 100);
+
+function progCheck() {
+  var progres = ar.innerHTML;
+  if (progres < 1200) {
+    document.getElementById("progressBar").style.backgroundColor = "#ff2c00";
+  } else if (progres < 1800) {
+    document.getElementById("progressBar").style.backgroundColor = "#fcaf50";
+  } else if (progres < 2400) {
+    document.getElementById("progressBar").style.backgroundColor = "#4caf50";
+  } else {
+    document.getElementById("progressBar").style.backgroundColor = "#02a2ff";
+  }
+}
+
+function problemWrong() {
+  updateRating(
+    Math.round(
+      array[Math.floor(progress / 100)][0] * ratingJump
+    )
+  );
+  document.getElementById("cor").innerHTML = "Wrong!";
+  document.getElementById("problemOptions").style.display = "none";
+  document.getElementById("solutionOptions").style.display = "inline";
+  document.getElementById("solution").innerHTML = questions[problem][1];
+}
+
+function problemCorrect() {
+  if (progress < 5000) {
+    updateRating(array[Math.floor(progress / 100)][1] * ratingJump);
+  }
+  problemsCorrect++;
+  document.getElementById("cor").innerHTML = "Correct!";
+  document.getElementById("problemOptions").style.display = "none";
+  document.getElementById("solutionOptions").style.display = "inline";
+  document.getElementById("solution").innerHTML = questions[problem][1];
+}
+
+function loadNewQuestion() {
+  var ele = document.getElementsByName("gender");
+  for (var i = 0; i < ele.length; i++) {
+    ele[i].checked = false;
+  }
+  progressBar.innerHTML = parseInt(ar.innerHTML);
+  questionsSolved++;
+  problem = Math.round(progress / 100) - 1;
+  if (progress > 1800 && problem < 25) {
+    problem = 25;
+  } else if (problem > 49) {
+    problem = (problem % 25) + 24;
+  }
+  console.log(notComingAgain);
+  console.log(problem);
+  while (notComingAgain.indexOf(problem) > -1) {
+    problem++;
+  }
+  document.getElementById("problem").innerHTML = questions[problem][0];
+  document.getElementById("problemOptions").style.display = "inline";
+  document.getElementById("solutionOptions").style.display = "none";
+  document.getElementById("o1").innerHTML = questions[problem][2];
+  document.getElementById("o2").innerHTML = questions[problem][3];
+  document.getElementById("o3").innerHTML = questions[problem][4];
+  document.getElementById("o4").innerHTML = questions[problem][5];
+  document.getElementById("o5").innerHTML = questions[problem][6];
+}
+
+function gradeProblem(x) {
+  let id = ["option0", "option1", "option2", "option3", "option4"];
+  notComingAgain.push(problem);
+  if (x) {
+    if (document.getElementById(id[questions[problem][7] - 3]).checked) {
+      //They selected the correct option
+      problemCorrect();
+      totalProg += Math.max(parseInt(ar.innerHTML), progress);
+    } else {
+      //They selected the wrong option
+      problemWrong();
+      totalProg += progress / 2;
+    }
+  } else {
+    //They clicked "See Solution"
+    updateRating(
+      Math.round(
+        array[Math.floor(progress / 100)][0] * ratingJump
+      )
+    );
+    document.getElementById("cor").innerHTML = "Don't worry, you got this!";
+    document.getElementById("problemOptions").style.display = "none";
+    document.getElementById("solutionOptions").style.display = "inline";
+    document.getElementById("solution").innerHTML = questions[problem][1];
+    totalProg += progress / 2;
+  }
+  cr.innerHTML = progress;
+  ar.innerHTML = Math.round(totalProg / (attemptCount + 2));
+  acc.innerHTML =
+    Math.round((problemsCorrect * 100) / (questionsSolved + 1)) + "%";
+  qs.innerHTML = questionsSolved + 1;
+  progressBar.style.width =
+    Math.round(totalProg / (attemptCount + 2)) / 32 + "%";
+
+  if (
+    Math.round(totalProg / (attemptCount + 2)) -
+      parseInt(progressBar.innerHTML) >
+    0
+  ) {
+    progressBar.innerHTML =
+      "<strong>" +
+      Math.round(totalProg / (attemptCount + 2)) +
+      "</strong> (+" +
+      (Math.round(totalProg / (attemptCount + 2)) -
+        parseInt(progressBar.innerHTML)) +
+      ")";
+  } else {
+    progressBar.innerHTML =
+      "<strong>" +
+      Math.round(totalProg / (attemptCount + 2)) +
+      "</strong> (" +
+      (Math.round(totalProg / (attemptCount + 2)) -
+        parseInt(progressBar.innerHTML)) +
+      ")";
+  }
+
+  setTimeout(function () {
+    attemptCount++;
+    ratingHistory.push(Math.round(totalProg / (attemptCount + 1)));
+    if (attemptCount > 25) {
+      eloChart.data.labels.push(attemptCount);
+    }
+    eloChart.data.datasets[0].data.push(
+      Math.round(totalProg / (attemptCount + 1))
+    );
+    eloChart.update();
+  }, 201 * 3);
+}
+
+for (var i = 0; i < initialLabels.length; i++) {
+  eloChart.data.labels.push(initialLabels[i]);
+}
+
+// Updated updateRating function that also updates the Elo progression chart
+function updateRating(amount) {
+  let val = progress;
+  /*for (let i = 200; i >= 1; i--) {
+          setTimeout(function () {
+            val += (amount * i) / 20100;
+            progressBar.style.width = val / 32 + "%";
+            if (amount < 0) {
+              progressBar.innerHTML =
+                "<strong>" + Math.round(val) + "</strong> (" + amount + ")";
+            } else {
+              progressBar.innerHTML =
+                "<strong>" + Math.round(val) + "</strong> (+" + amount + ")";
+            }
+            if (val < 499.5) {
+              progressBar.style.backgroundColor = "#ff0000";
+            } else {
+              progressBar.style.backgroundColor = "#4caf50";
+            }
+          }, i * 3);
+        }*/
+  progress += amount;
+
+  /* After the animation, update the chart with the new rating.
+        setTimeout(function () {
+          attemptCount++;
+          ratingHistory.push(progress);
+          if (attemptCount > 25) {
+            eloChart.data.labels.push(attemptCount);
+          }
+          eloChart.data.datasets[0].data.push(progress);
+          eloChart.update();
+        }, 201 * 3);*/
+}
+// Inject CSS for the popup
+  var popupStyle = document.createElement("style");
+  popupStyle.innerHTML = `
+  .popup-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(0, 0, 0, 0.6);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 10000;
+  }
+  .popup-content {
+    background: #fff;
+    padding: 20px 30px;
+    border-radius: 10px;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+    text-align: center;
+    font-size: 1.2em;
+    max-width: 50%;
+    max-height: 75%;
+    position: relative;
+    overflow-y: scroll;
+  }
+  .close-btn {
+    position: absolute;
+    top: 10px;
+    right: 15px;
+    font-size: 20px;
+    cursor: pointer;
+    background: none;
+    border: none;
+  }
+  @keyframes fadeIn {
+    from { opacity: 0; transform: scale(0.8); }
+    to { opacity: 1; transform: scale(1); }
+  }
+`;
+  document.head.appendChild(popupStyle);
+
+  function showPopup(message) {
+    var overlay = document.createElement("div");
+    overlay.className = "popup-overlay";
+    
+    var content = document.createElement("div");
+    content.className = "popup-content";
+    content.innerHTML = message;
+    
+    var closeButton = document.createElement("button");
+    closeButton.className = "close-btn";
+    closeButton.innerHTML = "&times;";
+    closeButton.onclick = function() {
+      document.body.removeChild(overlay);
+    };
+    
+    overlay.onclick = function(event) {
+      if (event.target === overlay) {
+        document.body.removeChild(overlay);
+      }
+    };
+    
+    content.appendChild(closeButton);
+    overlay.appendChild(content);
+    document.body.appendChild(overlay);
+  }
+
+  var proficiencyShown = false;
+  var masteryShown = false;
+
+  setInterval(function () {
+    if (typeof progress !== "undefined") {
+      if (progress >= 4000 && !proficiencyShown) {
+        proficiencyShown = true;
+        showPopup(
+          "<strong>Proficiency Achieved!</strong><br>You have achieved proficiency by getting to a rating above 4000.<br>"
+        );
+      }
+      if (progress >= 5000 && !masteryShown) {
+        masteryShown = true;
+        showPopup(
+          "<strong>Mastery Achieved!</strong><br>You have achieved mastery by getting to a rating above 5000."
+        );
+      }
+    }
+  }, 500);
+
+  showPopup('<h3>Tutorial - How to Use Elo Practice</h3><iframe width="560" height="315" src="https://www.youtube.com/embed/VYgirFHLwrM?si=h47XOI1EQchj7d-z" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe><br><p>For practice units, we have a database full of questions with each problem having its own problem rating, which you can view under the stats tab. As you get problems right, you will level up your rating, when you miss problems, you lose rating. As your rating gets higher and higher, the problems become more and more difficult. Problems rated above 1800 are real AP questions taken straight from past exams, so you should have plenty of practice. <strong>Consider completed practice as either you completing 25 or more questions or getting to a rating above 1800.</strong><br><br><i>Note: Progress is not saved when you close or refresh the tab</i>'); 
+    </script>
+    </body>
+</html>
