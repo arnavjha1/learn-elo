@@ -177,6 +177,7 @@ function loadNewQuestion() {
   document.getElementById("o2").innerHTML = questions[problem][3];
   document.getElementById("o3").innerHTML = questions[problem][4];
   document.getElementById("o4").innerHTML = questions[problem][5];
+  document.getElementById("qsn").innerHTML = parseInt(document.getElementById("qs").innerHTML) + 1;
 }
 
 function gradeProblem(x) {

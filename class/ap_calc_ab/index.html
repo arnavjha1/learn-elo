@@ -106,19 +106,19 @@
     <h3>Three Pillars of Calc AB:</h3>
     <div class="btn-container">
       <button class="btn" onclick="redirectTo('/limits/index.html')">
-        <strong style="width: 250px">LIMITS (U1)</strong><progress value="0" max="100" id="ap_calc_ab/limits"></progress> <c id="ap_csa/unit_1/practice?label" style="font-family: 'Fira Code', 'JetBrains Mono', Consolas, 'Courier New', monospace">500</c>
+        <strong style="width: 250px">LIMITS (U1)</strong><progress value="0" max="100" id="ap_calc_ab/limits/index"></progress> <c id="ap_calc_ab/limits/index?label" style="font-family: 'Fira Code', 'JetBrains Mono', Consolas, 'Courier New', monospace">500</c>
       </button>
       <button class="btn" onclick="redirectTo('/derivatives/index.html')">
-        <strong style="width: 250px">DERIVATIVES (U2 & U3)</strong><progress value="0" max="100" id="ap_calc_ab/derivatives"></progress> <c id="ap_csa/unit_1/practice?label" style="font-family: 'Fira Code', 'JetBrains Mono', Consolas, 'Courier New', monospace">500</c>
+        <strong style="width: 250px">DERIVATIVES (U2 & U3)</strong><progress value="0" max="100" id="ap_calc_ab/derivatives/index"></progress> <c id="ap_calc_ab/derivatives/index?label" style="font-family: 'Fira Code', 'JetBrains Mono', Consolas, 'Courier New', monospace">500</c>
       </button>
       <button class="btn" onclick="redirectTo('/integrals/index.html')">
-        <strong style="width: 250px">INTEGRALS (U4 & U5)</strong><progress value="0" max="100" id="ap_calc_ab/integrals"></progress> <c id="ap_csa/unit_1/practice?label" style="font-family: 'Fira Code', 'JetBrains Mono', Consolas, 'Courier New', monospace">500</c>
+        <strong style="width: 250px">INTEGRALS (U4 & U5)</strong><progress value="0" max="100" id="ap_calc_ab/integrals/index"></progress> <c id="ap_calc_ab/integrals/index?label" style="font-family: 'Fira Code', 'JetBrains Mono', Consolas, 'Courier New', monospace">500</c>
       </button>
     </div>
   </div>
 
   <script>
-    const numUnits = 1; // total number of units
+    const numUnits = 3; // total number of units
 
     function redirectTo(page) {
       window.location.href = "." + page;
@@ -126,13 +126,14 @@
     
     let sum = 0;
     for (let i = 0; i < numUnits; i++) {
-      const key = "ap_csa/unit_" + (i + 1);
-      const storedValue = parseInt(localStorage.getItem(key));
+      const key = (i > 1) ? "ap_calc_ab/integrals/index" : (i > 0) ? "ap_calc_ab/derivatives/index" : "ap_calc_ab/limits/index";
+      let storedValue = parseInt(localStorage.getItem(key));
       const storedAccuracy = parseInt(localStorage.getItem(key+"?acc"));
       const progressElement = document.getElementById(key);
 
       // Compute progress percentage
-      const progressValue = isNaN(storedValue) ? 0 : (storedValue / 3000) * 100;
+      storedValue = isNaN(storedValue) ? 500 : storedValue;
+      const progressValue = (storedValue / 3000) * 100;
       progressElement.value = progressValue;
 
       // Determine color based on stored value

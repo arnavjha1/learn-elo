@@ -1,0 +1,776 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Dynamic Progress Bar</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap"
+      rel="stylesheet"
+    />
+    <!-- Include Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    
+    <style>
+      /* Global Styles */
+      body {
+        margin: 0;
+        padding: 0;
+        font-family: "Roboto", sans-serif;
+        background: linear-gradient(135deg, #83a4d4, #b6fbff);
+        color: #333;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        min-height: 100vh;
+      }
+      body.dark-mode {
+        --bg-color: #121212;
+        --box-bg: #1e1e1e;
+        --text-color: #f1f1f1;
+        --button-bg: #2196f3;
+        --button-hover: #1976d2;
+        --footer-color: #aaa;
+      }
+
+      .container {
+        overflow-y: scroll;
+        position: fixed;
+        top: 20px;
+        bottom: 20px;
+        background: #fff;
+        max-width: 800px;
+        width: 90%;
+        padding: 30px;
+        border-radius: 15px;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+      }
+
+      .large-mobile {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+      }
+      /* Chart Styles */
+      #eloChart {
+        margin-bottom: 20px;
+      }
+      /* Progress Bar Styles */
+      .progress-container {
+        width: 100%;
+        background-color: #e0e0e0;
+        border-radius: 25px;
+        overflow: hidden;
+        margin-bottom: 20px;
+      }
+      .progress-bar {
+        width: 0;
+        height: 30px;
+        text-align: center;
+        line-height: 30px;
+        color: white;
+        transition: width 1s ease;
+      }
+      #progressBar {
+        background-color: #ff2c00;
+        transition: width 1s ease, background-color 1.5s ease;
+      }
+      /* Content Styles */
+      h1 {
+        font-size: 2em;
+        margin-bottom: 10px;
+        text-align: center;
+      }
+      h2 {
+        text-align: center;
+      }
+      h4 {
+        font-weight: 500;
+      }
+      .question,
+      .option,
+      .solution {
+        margin-bottom: 15px;
+      }
+      .option input[type="radio"] {
+        margin-right: 10px;
+      }
+      button {
+        background-color: #4caf50;
+        color: #fff;
+        border: none;
+        padding: 10px 20px;
+        font-size: 1em;
+        border-radius: 5px;
+        cursor: pointer;
+        margin-right: 10px;
+        transition: background-color 0.3s ease;
+      }
+      .btn {
+        background-color: #e92314;
+      }
+      button:hover {
+        background-color: #43a047;
+      }
+      /* Visibility Settings */
+      #problemOptions {
+        display: block;
+      }
+      #solutionOptions {
+        display: none;
+      }
+
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <!-- Progress Bar -->
+      <div class="progress-container" id="pro">
+        <div class="progress-bar" id="progressBar">0%</div>
+      </div>
+      <h1>Derivatives Practice</h1>
+      <div class="large-mobile">
+        <div class="mobile-container">
+          <div class="question">
+            <h4>
+              <c id="qsn">1</c>. <span id="problem"> Issue loading question (check console)</span>
+            </h4>
+          </div>
+          <div class="option">
+            <input type="radio" name="gender" id="option0" /><span id="o1"></span
+            ><br />
+            <input type="radio" name="gender" id="option1" /><span id="o2"></span
+            ><br />
+            <input type="radio" name="gender" id="option2" /><span id="o3"></span
+            ><br />
+            <input type="radio" name="gender" id="option3" /><span id="o4"></span
+            ><br />
+          </div>
+          <div id="problemOptions">
+            <button onclick="gradeProblem(true)">Submit</button>
+            <button onclick="gradeProblem(false)">See Solution</button>
+          </div>
+          <div id="solutionOptions">
+            <strong><span id="cor">Wrong!</span> This is the solution:</strong
+            ><br />
+            <span id="solution"></span><br /><br />
+            <button onclick="loadNewQuestion()">Continue</button>
+          </div>
+          <br><br>
+
+          <h4>Stats</h4>
+          <ul>
+            <li>Questions Solved: <c id="qs">0</c></li>
+            <li>Problem Rating: <c id="cr">500</c></li>
+            <li>Accuracy: <c id="acc">N/A</c></li>
+            <li>Actual Rating: <c id="ar">500</c></li>
+          </ul><br>
+          <button class="btn" onclick="window.location.href='./frq1.html'">FRQ #1</button>
+          <button class="btn" onclick="window.location.href='./frq2.html'">FRQ #2</button>
+          <button class="btn" onclick="window.location.href='./frq3.html'">FRQ #3</button>
+        </div>
+        <div class="mobile-container">
+          <canvas id="eloChart" width="450px" height="500px"></canvas>
+        </div>
+      </div>
+    </div>
+  <script>
+    const ratingJump = 1;
+const questions = [
+  // 1 (easiest)
+  [
+    "Which of the following is a valid int literal in Java?",
+    "Whole numbers without quotes are valid int literals; e.g., 42. Quoted numbers are Strings; 3.14 is a double; '7' is a char.",
+    "42",
+    "\"42\"",
+    "3.14",
+    "'7'",
+    1
+  ],
+
+  // 2
+  [
+    "Which literal denotes a double?",
+    "A decimal point with digits (e.g., 2.0) is a double by default.",
+    "2",
+    "2.0",
+    "'2'",
+    "\"2\"",
+    2
+  ],
+
+  // 3
+  [
+    "Which of these is a boolean literal?",
+    "Java has exactly two boolean literals: true and false (lowercase).",
+    "True",
+    "FALSE",
+    "true",
+    "\"false\"",
+    3
+  ],
+
+  // 4
+  [
+    "Which of these is a valid char literal?",
+    "A char is a single character in single quotes, e.g., 'A'.",
+    "'AB'",
+    "\"A\"",
+    "'A'",
+    "A",
+    3
+  ],
+
+  // 5
+  [
+    "What is the value of 7 / 2 with int arithmetic?",
+    "Integer division truncates toward zero: 7 / 2 = 3.",
+    "3",
+    "3.5",
+    "4",
+    "2",
+    1
+  ],
+
+  // 6
+  [
+    "What is the value of 7 % 2?",
+    "7 divided by 2 leaves remainder 1, so 7 % 2 == 1.",
+    "0",
+    "1",
+    "2",
+    "3",
+    2
+  ],
+
+  // 7
+  [
+    "Which expression produces a double result?",
+    "If either operand is a double, the result is a double. 7.0 / 2 yields a double.",
+    "7 / 2",
+    "7.0 / 2",
+    "(int)(7.0) / 2",
+    "7 / (int)2.0",
+    2
+  ],
+
+  // 8
+  [
+    "What prints?  System.out.println(\"Score: \" + 5 + 3);",
+    "String concatenation is left-to-right: \"Score: \" + 5 -> \"Score: 5\"; then + 3 -> \"Score: 53\".",
+    "Score: 8",
+    "Score: 53",
+    "Score: 5 + 3",
+    "Score: 5 3",
+    2
+  ],
+
+  // 9
+  [
+    "What prints?  System.out.println(\"Score: \" + (5 + 3));",
+    "Parentheses force arithmetic first: 5 + 3 = 8, then concatenated -> \"Score: 8\".",
+    "Score: 53",
+    "Score: 8",
+    "Score: 5 + 3",
+    "Score: 5 3",
+    2
+  ],
+
+  // 10
+  [
+    "Which of the following will NOT compile?",
+    "Assigning a double literal to an int without a cast is illegal: int x = 3.7; won’t compile.",
+    "double d = 3.7;",
+    "int x = 3.7;",
+    "char c = 'Z';",
+    "boolean b = false;",
+    2
+  ],
+
+  // 11
+  [
+    "Given int a = 4; what is a after a += 3 * 2; ?",
+    "3*2 = 6; a += 6 -> a becomes 10.",
+    "7",
+    "10",
+    "12",
+    "14",
+    2
+  ],
+
+  // 12
+  [
+    "Given double x = 6; int y = 4; what is x / y?",
+    "Mixed types promote to double: 6.0 / 4 = 1.5 (double).",
+    "1",
+    "1.5",
+    "2",
+    "2.0",
+    2
+  ],
+
+  // 13
+  [
+    "Which expression is equivalent to a = a + 1; for an int a?",
+    "Post-increment a++; pre-increment ++a; both add one to a.",
+    "a--",
+    "a++",
+    "a -= 1",
+    "a = a - 1",
+    2
+  ],
+
+  // 14
+  [
+    "What is printed? int a = 2; int b = a++; System.out.println(a + \",\" + b);",
+    "Post-increment assigns old value to b, then increments a: prints 3,2.",
+    "2,2",
+    "3,2",
+    "2,3",
+    "3,3",
+    2
+  ],
+
+  // 15
+  [
+    "Which comparison is true for int x = 7; int y = 7;",
+    "x == y compares values; it is true here.",
+    "x == y",
+    "x > y",
+    "x < y",
+    "x != y",
+    1
+  ],
+
+  // 16
+  [
+    "What is (int)(3.9)?",
+    "Casting from double to int truncates toward zero: (int)3.9 == 3.",
+    "3",
+    "4",
+    "3.0",
+    "Compilation error",
+    1
+  ],
+
+  // 17
+  [
+    "What is Math.abs(-7)?",
+    "abs returns the non-negative magnitude; abs(-7) = 7.",
+    "-7",
+    "7",
+    "0",
+    "1",
+    2
+  ],
+
+  // 18
+  [
+    "What is Math.sqrt(16) + Math.pow(2,3)?",
+    "sqrt(16)=4.0; pow(2,3)=8.0; sum = 12.0.",
+    "8.0",
+    "12.0",
+    "10.0",
+    "6.0",
+    2
+  ],
+
+  // 19
+  [
+    "What prints? System.out.println('A' + 1);",
+    "char 'A' promotes to its int code (65). 65 + 1 = 66; println prints 66.",
+    "A1",
+    "66",
+    "B",
+    "Compilation error",
+    2
+  ],
+
+  // 20
+  [
+    "What is the type of the expression 'A' + 1?",
+    "A char in arithmetic promotes to int; result is an int.",
+    "char",
+    "int",
+    "double",
+    "String",
+    2
+  ],
+
+  // 21
+  [
+    "Which expression evaluates to true? int a=5, b=10;",
+    "5 * 2 == 10 so a * 2 == b is true.",
+    "a == b",
+    "a * 2 == b",
+    "a > b",
+    "a + b < b",
+    2
+  ],
+
+  // 22
+  [
+    "What prints? System.out.println(\"Result: \" + (7/2));",
+    "7/2 with ints is 3; concatenation prints \"Result: 3\".",
+    "Result: 3",
+    "Result: 3.5",
+    "Result: 7/2",
+    "Result: 3 ",
+    1
+  ],
+
+  // 23
+  [
+    "What prints? System.out.println(\"Result: \" + 7/2);",
+    "Left-to-right: \"Result: \" + 7 -> \"Result: 7\" (String). Then String / 2 is invalid? No—Java applies + before /. Actually + and / have different precedence: / applies before +. So 7/2 computes first (=3), then \"Result: \" + 3 -> \"Result: 3\".",
+    "Result: 3",
+    "Result: 3.5",
+    "Compilation error",
+    "Result: 7/2",
+    1
+  ],
+
+  // 24
+  [
+    "What is (double)(7/2)?",
+    "7/2 is computed first as int -> 3; cast to double gives 3.0.",
+    "3.5",
+    "3.0",
+    "3",
+    "7.0/2",
+    2
+  ],
+
+  // 25
+  [
+    "What is 7/2.0?",
+    "At least one operand is double; result is 3.5 (double).",
+    "3",
+    "3.0",
+    "3.5",
+    "4",
+    3
+  ],
+
+  // 26
+  [
+    "Which line compiles and sets x to 0.7 exactly as a double?",
+    "7.0/10 is a double division -> 0.7.",
+    "double x = (double)(7/10);",
+    "double x = 7.0 / 10;",
+    "double x = (int)7 / 10;",
+    "double x = 7 / 10;",
+    2
+  ],
+
+  // 27
+  [
+    "Given int n = 15; what is n % 4?",
+    "15 = 3*4 + 3; remainder is 3.",
+    "2",
+    "3",
+    "4",
+    "1",
+    2
+  ],
+
+  // 28
+  [
+    "What prints? int a=5; System.out.println(++a);",
+    "Pre-increment increments then uses the value: prints 6.",
+    "5",
+    "6",
+    "Compilation error",
+    "Undefined",
+    2
+  ],
+
+  // 29
+  [
+    "Which expression is true for boolean b = false;",
+    "!b negates false -> true.",
+    "b",
+    "!b",
+    "b && true",
+    "b || false",
+    2
+  ],
+
+  // 30
+  [
+    "What prints? System.out.println(\"\\\"Hi\\\"\");",
+    "Escaped quotes print a double-quoted Hi: \"Hi\".",
+    "Hi",
+    "\\\"Hi\\\"",
+    "\"Hi\"",
+    "Compilation error",
+    3
+  ],
+
+  // 31 (start harder)
+  [
+    "Evaluate: (int)(2.3 + 4.6) == (int)2.3 + (int)4.6",
+    "Left: 2.3+4.6=6.9 -> (int)6.9=6. Right: (int)2.3=2 and (int)4.6=4, 2+4=6. They are equal (6==6).",
+    "true",
+    "false",
+    "Compilation error",
+    "Depends on platform",
+    1
+  ],
+
+  // 32
+  [
+    "What is Math.max( Math.min(4, 9), 6 )?",
+    "min(4,9)=4; max(4,6)=6.",
+    "4",
+    "6",
+    "9",
+    "13",
+    2
+  ],
+
+  // 33
+  [
+    "Given int x = 10; System.out.println( x += x / 4 ); what prints?",
+    "x/4 = 2 (int). x += 2 -> x=12, prints 12.",
+    "10",
+    "12",
+    "2",
+    "2.5",
+    2
+  ],
+
+  // 34
+  [
+    "What prints? char c = 'A'; System.out.println( (char)(c + 2) );",
+    "'A' is 65; 65+2=67; (char)67 is 'C'.",
+    "A2",
+    "B",
+    "C",
+    "Compilation error",
+    3
+  ],
+
+  // 35
+  [
+    "Which is true about mixed-type division?",
+    "If either operand is double, result is double; otherwise int division occurs.",
+    "The result type is always int",
+    "The result type is always double",
+    "Result type depends on operand types; a double operand makes the result double",
+    "Java rounds to nearest int automatically",
+    3
+  ],
+
+  // 36
+  [
+    "What is the range of Math.random()?",
+    "Math.random() returns a double in [0.0, 1.0).",
+    "[0.0, 1.0]",
+    "(0.0, 1.0]",
+    "[0.0, 1.0)",
+    "(0.0, 1.0)",
+    3
+  ],
+
+  // 37
+  [
+    "Which expression yields a random int from 0 to 9 inclusive?",
+    "Multiply by 10 and cast: (int)(Math.random()*10).",
+    "(int)Math.random() * 10",
+    "(int)(Math.random()*10)",
+    "1 + (int)(Math.random()*10)",
+    "(int)(Math.random()*9) + 1",
+    2
+  ],
+
+  // 38
+  [
+    "Which prints an int from 5 to 9 inclusive?",
+    "Scale to 5 values (0–4) then shift by +5: 5 + (int)(Math.random()*5).",
+    "5 + (int)(Math.random()*4)",
+    "5 + (int)(Math.random()*5)",
+    "4 + (int)(Math.random()*5)",
+    "(int)(Math.random()*5)",
+    2
+  ],
+
+  // 39
+  [
+    "Evaluate: (int)(-3.7) and (int)(3.7)",
+    "Both truncate toward zero: -3.7 -> -3; 3.7 -> 3.",
+    "-4 and 3",
+    "-3 and 4",
+    "-4 and 4",
+    "-3 and 3",
+    4
+  ],
+
+  // 40
+  [
+    "What is the value of the boolean expression: !(true && false) || (3 * 2 == 6)",
+    "true && false is false; !false is true; true || (anything) is true.",
+    "true",
+    "false",
+    "Compilation error",
+    "Depends on short-circuit",
+    1
+  ],
+
+  // 41
+  [
+    "Given int a=7, b=3; what is a/b + a% b?",
+    "a/b=2, a%b=1; sum = 3 (a = b*q + r relationship).",
+    "2",
+    "3",
+    "4",
+    "1",
+    2
+  ],
+
+  // 42
+  [
+    "Which is equivalent to a *= b + 2 for int a, b?",
+    "Right-hand side evaluated first, then multiply-assign: a = a * (b + 2).",
+    "a = a * b + 2",
+    "a = (a * b) + 2",
+    "a = a * (b + 2)",
+    "a = (a + 2) * b",
+    3
+  ],
+
+  // 43
+  [
+    "What prints? double d = 2.5; System.out.println((int)d + d);",
+    "(int)d is 2; 2 + 2.5 -> 4.5 (double).",
+    "4",
+    "4.0",
+    "4.5",
+    "2.52",
+    3
+  ],
+
+  // 44
+  [
+    "Which is true about operator precedence?",
+    "Multiplication/division/modulo > addition/subtraction; parentheses override.",
+    "Addition has higher precedence than multiplication",
+    "Multiplication and division have higher precedence than addition",
+    "All have the same precedence",
+    "Precedence is random",
+    2
+  ],
+
+  // 45
+  [
+    "What is Math.round(2.49) and Math.round(2.5)?",
+    "round returns long, rounding half up: 2.49 -> 2; 2.5 -> 3.",
+    "2 and 2",
+    "2 and 3",
+    "3 and 3",
+    "3 and 2",
+    2
+  ],
+
+  // 46
+  [
+    "Evaluate: (int)(Math.random()*10) == 10",
+    "(int)(x) for x in [0.0,10.0) yields 0..9; it can never be 10.",
+    "Always true",
+    "Always false",
+    "True about 10% of the time",
+    "Depends on rounding mode",
+    2
+  ],
+
+  // 47
+  [
+    "What prints? System.out.println(\"Sum=\" + 2 + 3 * 4);",
+    "3*4 = 12 first; then \"Sum=\" + 2 -> \"Sum=2\"; then + 12 -> \"Sum=212\".",
+    "Sum=14",
+    "Sum=212",
+    "Sum=2 + 12",
+    "Sum=2*12",
+    2
+  ],
+
+  // 48
+  [
+    "Which expression is closest to 0.1 + 0.2 in Java doubles?",
+    "Due to binary floating-point, 0.1 + 0.2 is not exactly 0.3; it’s approximately 0.30000000000000004.",
+    "Exactly 0.3",
+    "Slightly larger than 0.3",
+    "Slightly smaller than 0.3",
+    "Exactly 0.4",
+    2
+  ],
+
+  // 49
+  [
+    "What prints? int a=5; System.out.println(a++ + ++a);",
+    "Start a=5. a++ yields 5 then a becomes 6; ++a makes a 7 then yields 7; 5+7=12; prints 12 (final a is 7).",
+    "10",
+    "11",
+    "12",
+    "13",
+    3
+  ],
+
+  // 50 (hardest)
+  [
+    "Assume int a=8, b=3; What is the value of (double)(a/b) + (a/(double)b) ?",
+    "a/b is 2 (int), cast to double -> 2.0. a/(double)b is 8/3.0 -> 2.666..., sum ≈ 4.6666666667.",
+    "4.0",
+    "4.3333333333",
+    "4.6666666667 (approximately)",
+    "5.0",
+    3
+  ]
+];
+
+let array = [
+  [-1, 300], // 0
+  [-11, 290], // 100
+  [-21, 275], // 200
+  [-32, 260], // 300
+  [-42, 245], // 400
+  [-53, 230], // 500
+  [-64, 218], // 600
+  [-75, 207], // 700
+  [-83, 197], // 800
+  [-92, 188], // 900
+  [-101, 180], // 1000
+  [-112, 173], // 1100
+  [-125, 167], // 1200
+  [-133, 162], // 1300
+  [-144, 158], // 1400
+  [-152, 154], // 1500
+  [-161, 150], // 1600
+  [-175, 147], // 1700
+  [-183, 144], // 1800
+  [-215, 94], // 1900
+  [-242, 82], // 2000
+  [-275, 73], // 2100
+  [-302, 67], // 2200
+  [-321, 51], // 2300
+  [-349, 42], // 2400
+  [-381, 36], // 2500
+  [-418, 31], // 2600
+  [-427, 27], // 2700
+  [-431, 24], // 2800
+  [-434, 22], // 2900
+  [-436, 21], // 3000
+  [-437, 20], // 3100
+  [-437, 19], // 3200
+  [-437, 19], // 3300
+];
+</script>
+
+<!--All the backend comes from here-->
+<!--  <script src="https://learn-elo.vercel.app/elo-backend.js"></script>-->
+<script src="file:///C:/Users/Arnav/Documents/GitHub/learn-elo/elo-backend.js"></script>
+    </body>
+</html>
