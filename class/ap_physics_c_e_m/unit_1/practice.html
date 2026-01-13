@@ -726,6 +726,41 @@ let array = [
   [-437, 19], // 3300
 ];
 
+function showPopup(message) {
+    var overlay = document.createElement("div");
+    overlay.className = "popup-overlay";
+    
+    var content = document.createElement("div");
+    content.className = "popup-content";
+    content.innerHTML = message;
+    
+    var closeButton = document.createElement("button");
+    closeButton.className = "close-btn";
+    closeButton.innerHTML = "&times;";
+    closeButton.onclick = function() {
+      document.body.removeChild(overlay);
+    };
+    
+    overlay.onclick = function(event) {
+      if (event.target === overlay) {
+        document.body.removeChild(overlay);
+      }
+    };
+    
+    content.appendChild(closeButton);
+    overlay.appendChild(content);
+    document.body.appendChild(overlay);
+  }
+
+  function reference(){
+    showPopup(`
+      <h3>Unit 1 - Key Formula</h3>
+      <p>For Unit 1, the key idea is to just use the various forms of Coulomb\'s Law in the ctice units, we have a database full of questions with each problem having its own problem rating, which you can view under the stats tab. As you get problems right, you will level up your rating, when you miss problems, you lose rating. As your rating gets higher and higher, the problems become more and more difficult. Problems rated above 1800 are real AP questions taken straight from past exams, so you should have plenty of practice. <strong>Consider completed practice as either you completing 25 or more questions or getting to a rating above 1800.</strong><br><br><i>Note: Progress is not saved when you close or refresh the tab</i>
+      
+    `); 
+  }
+  reference();
+
 
 // Global variables for Elo rating history and Chart instance
 let ratingHistory = [];
@@ -1047,32 +1082,6 @@ function updateRating(amount) {
 `;
   document.head.appendChild(popupStyle);
 
-  function showPopup(message) {
-    var overlay = document.createElement("div");
-    overlay.className = "popup-overlay";
-    
-    var content = document.createElement("div");
-    content.className = "popup-content";
-    content.innerHTML = message;
-    
-    var closeButton = document.createElement("button");
-    closeButton.className = "close-btn";
-    closeButton.innerHTML = "&times;";
-    closeButton.onclick = function() {
-      document.body.removeChild(overlay);
-    };
-    
-    overlay.onclick = function(event) {
-      if (event.target === overlay) {
-        document.body.removeChild(overlay);
-      }
-    };
-    
-    content.appendChild(closeButton);
-    overlay.appendChild(content);
-    document.body.appendChild(overlay);
-  }
-
   var proficiencyShown = false;
   var masteryShown = false;
 
@@ -1093,7 +1102,6 @@ function updateRating(amount) {
     }
   }, 500);
 
-  showPopup('<h3>Tutorial - How to Use Elo Practice</h3><iframe width="560" height="315" src="https://www.youtube.com/embed/VYgirFHLwrM?si=h47XOI1EQchj7d-z" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe><br><p>For practice units, we have a database full of questions with each problem having its own problem rating, which you can view under the stats tab. As you get problems right, you will level up your rating, when you miss problems, you lose rating. As your rating gets higher and higher, the problems become more and more difficult. Problems rated above 1800 are real AP questions taken straight from past exams, so you should have plenty of practice. <strong>Consider completed practice as either you completing 25 or more questions or getting to a rating above 1800.</strong><br><br><i>Note: Progress is not saved when you close or refresh the tab</i>'); 
     </script>
     </body>
 </html>
