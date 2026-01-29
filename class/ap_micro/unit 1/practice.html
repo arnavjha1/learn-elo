@@ -1,1 +1,1131 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Dynamic Progress Bar</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap"
+      rel="stylesheet"
+    />
+    <!-- Include Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <style>
+      
+    #darklabel {
+      color: var(--darklabel);
+    }
+
+    body.dark-mode {
+      --bg-color: #121212;
+      --box-bg: #1e1e1e;
+      --text-color: #f1f1f1;
+      --button-bg: #2196f3;
+      --button-hover: #1976d2;
+      --footer-color: #aaa;
+      --darklabel: #000;
+    }
+
+
+
+      /* Global Styles */
+      body {
+        margin: 0;
+        padding: 0;
+        font-family: "Roboto", sans-serif;
+        background: linear-gradient(135deg, #83a4d4, #b6fbff);
+        color: #333;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        min-height: 100vh;
+      }
+      .container {
+        overflow-y: scroll;
+        position: fixed;
+        top: 20px;
+        bottom: 20px;
+        background: #fff;
+        max-width: 800px;
+        width: 90%;
+        padding: 30px;
+        border-radius: 15px;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+      }
+      /* Chart Styles */
+      #eloChart {
+        margin-bottom: 20px;
+      }
+      /* Progress Bar Styles */
+      .progress-container {
+        width: 100%;
+        background-color: #e0e0e0;
+        border-radius: 25px;
+        overflow: hidden;
+        margin-bottom: 20px;
+      }
+      .progress-bar {
+        width: 0;
+        height: 30px;
+        text-align: center;
+        line-height: 30px;
+        color: white;
+        transition: width 1s ease;
+      }
+      #progressBar {
+        background-color: #ff2c00;
+        transition: width 1s ease, background-color 1.5s ease;
+      }
+      /* Content Styles */
+      h1 {
+        font-size: 2em;
+        margin-bottom: 10px;
+        text-align: center;
+      }
+      h2 {
+        text-align: center;
+      }
+      h4 {
+        font-weight: 500;
+      }
+      .question,
+      .option,
+      .solution {
+        margin-bottom: 15px;
+      }
+      .option input[type="radio"] {
+        margin-right: 10px;
+      }
+      button {
+        background-color: #4caf50;
+        color: #fff;
+        border: none;
+        padding: 10px 20px;
+        font-size: 1em;
+        border-radius: 5px;
+        cursor: pointer;
+        margin-right: 10px;
+        transition: background-color 0.3s ease;
+      }
+      button:hover {
+        background-color: #43a047;
+      }
+      /* Visibility Settings */
+      #problemOptions {
+        display: block;
+      }
+      #solutionOptions {
+        display: none;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <!-- Progress Bar -->
+      <div class="progress-container" id="pro">
+        <div class="progress-bar" id="progressBar">0%</div>
+      </div>
+      <h1>Unit 1 Practice</h1>
+      <div class="question">
+        <h4>
+          <span id="problem">Issue loading question (check console)</span>
+        </h4>
+      </div>
+      <div class="option">
+        <input type="radio" name="gender" id="option0" /><span id="o1"></span
+        ><br />
+        <input type="radio" name="gender" id="option1" /><span id="o2"></span
+        ><br />
+        <input type="radio" name="gender" id="option2" /><span id="o3"></span
+        ><br />
+        <input type="radio" name="gender" id="option3" /><span id="o4"></span
+        ><br />
+        <input type="radio" name="gender" id="option4" /><span id="o5"></span
+        ><br />
+      </div>
+      <div id="problemOptions">
+        <button onclick="gradeProblem(true)">Submit</button>
+        <button onclick="gradeProblem(false)">See Solution</button>
+      </div>
+      <div id="solutionOptions">
+        <strong><span id="cor">Wrong!</span> This is the solution:</strong
+        ><br />
+        <span id="solution"></span><br /><br />
+        <button onclick="loadNewQuestion()">Continue</button>
+      </div>
+      <!-- Elo Progression Chart -->
+      <canvas id="eloChart" width="800" height="200"></canvas>
+      <h4>Stats</h4>
+      <ul>
+        <li>Questions Solved: <c id="qs">0</c></li>
+        <li>Problem Rating: <c id="cr">500</c></li>
+        <li>Accuracy: <c id="acc">N/A</c></li>
+        <li>Actual Rating: <c id="ar">500</c></li>
+      </ul>
+    </div>
+  <script>
+    const ratingJump = 1;
+    const questions = [
+  // Q1 (Scarcity)
+  [
+    "Which of the following best defines the fundamental economic concept of scarcity?",
+    "Scarcity arises because human wants are unlimited while the resources available to satisfy those wants are limited. This forces individuals and societies to make choices.",
+    "A shortage of goods caused by low prices.",
+    "A situation where supply exceeds demand.",
+    "The condition where unlimited wants exceed limited resources.", // Correct Answer (Index 3)
+    "The inability of a society to produce enough money.",
+    "A temporary lack of resources due to natural disasters.",
+    4
+  ],
+  // Q2 (Factors of Production)
+  [
+    "A software developer writing code for a new application represents which factor of production?",
+    "Labor refers to the human effort, both physical and mental, used in the production of goods and services.",
+    "Land",
+    "Capital",
+    "Labor", // Correct Answer (Index 4)
+    "Entrepreneurship",
+    "Technology",
+    5
+  ],
+  // Q3 (Opportunity Cost)
+  [
+    "You have $20. You can buy a T-shirt for $20, a book for $20, or a meal for $20. You prefer the T-shirt most, the book second, and the meal third. If you buy the T-shirt, what is the opportunity cost?",
+    "Opportunity cost is the value of the *next best* alternative foregone. Since the book was your second choice, the book is the opportunity cost, not the meal or the money.",
+    "The book and the meal.",
+    "The $20 spent.",
+    "The book.", // Correct Answer (Index 4)
+    "The meal.",
+    "The satisfaction gained from the T-shirt.",
+    5
+  ],
+  // Q4 (PPC - Efficiency)
+  [
+    "Which of the following is true for a point located strictly inside the Production Possibilities Curve (PPC)?",
+    "Points inside the curve indicate that resources are underutilized or being used inefficiently (unemployment).",
+    "It represents an efficient allocation of resources.",
+    "It is unattainable with current resources.",
+    "It represents a situation where resources are underutilized or inefficient.", // Correct Answer (Index 4)
+    "It indicates that the economy is growing.",
+    "It represents the maximum possible output.",
+    5
+  ],
+  // Q5 (PPC - Shape)
+  [
+    "Why is the Production Possibilities Curve (PPC) typically bowed outward (concave) from the origin?",
+    "The bowed-out shape represents the Law of Increasing Opportunity Cost. Resources are not perfectly adaptable; as you produce more of one good, you must use resources that are less suited for it, increasing the cost.",
+    "Because resources are perfectly adaptable between the production of two goods.",
+    "Because opportunity costs are constant.",
+    "Because resources are not equally well-suited for producing both goods.", // Correct Answer (Index 4)
+    "Because of the law of diminishing marginal utility.",
+    "Because economic growth is occurring.",
+    5
+  ],
+  // Q6 (PPC - Shifts)
+  [
+    "An economy produces Capital Goods and Consumer Goods. A technological breakthrough specifically improves the production of Capital Goods only. How will the PPC shift?",
+    "Since the technology only applies to Capital Goods, the maximum output for Capital Goods increases, but the maximum for Consumer Goods stays the same, causing the curve to rotate outward along the Capital Goods axis.",
+    "The entire curve shifts outward parallel to the original.",
+    "The entire curve shifts inward.",
+    "The curve rotates outward along the Capital Goods axis, but the Consumer Goods intercept remains the same.", // Correct Answer (Index 5)
+    "The curve rotates outward along the Consumer Goods axis.",
+    "The movement will be along the curve, not a shift.",
+    6
+  ],
+  // Q7 (PPC - Growth)
+  [
+    "Which of the following choices would lead to the greatest outward shift of a nation's PPC in the long run?",
+    "Investing in capital goods (machinery, education, technology) increases future productive capacity, leading to greater economic growth compared to producing consumer goods now.",
+    "Producing only consumer goods.",
+    "Increasing unemployment benefits.",
+    "Investing heavily in capital goods and education.", // Correct Answer (Index 4)
+    "Reducing the retirement age.",
+    "Printing more money.",
+    5
+  ],
+  // Q8 (Normative vs Positive)
+  [
+    "Which of the following is a normative economic statement?",
+    "Normative statements express an opinion or value judgment (what 'should' be). Positive statements are factual and testable.",
+    "The unemployment rate is 4.5%.",
+    "The government should increase the minimum wage to help the poor.", // Correct Answer (Index 3)
+    "An increase in the price of gas leads to a decrease in the quantity demanded.",
+    "Inflation was 2% last year.",
+    "If taxes rise, consumption may fall.",
+    4
+  ],
+  // Q9 (Command Economy)
+  [
+    "Which of the following is a characteristic of a command economy?",
+    "In a command economy (centrally planned), the government owns the resources and makes production decisions.",
+    "Private ownership of property.",
+    "Prices determined by supply and demand.",
+    "Central government planning of production and resource allocation.", // Correct Answer (Index 4)
+    "Consumer sovereignty.",
+    "Competition among firms.",
+    5
+  ],
+  // Q10 (Market Economy)
+  [
+    "In a pure market economy, the answer to the question 'For whom to produce?' is primarily determined by:",
+    "In a market economy, goods go to those who have the willingness and ability (purchasing power) to pay for them.",
+    "Government decree.",
+    "A lottery system.",
+    "The purchasing power and income of individuals.", // Correct Answer (Index 4)
+    "Social need.",
+    "Equality of distribution.",
+    5
+  ],
+  // Q11 (Comparative Advantage - Output)
+  [
+    "Consider the table below showing production per day:<br><table border='1' style='border-collapse: collapse; width: 100%;'><tr><th>Country</th><th>Cars</th><th>Computers</th></tr><tr><td>Country A</td><td>10</td><td>40</td></tr><tr><td>Country B</td><td>5</td><td>25</td></tr></table><br>Which country has the comparative advantage in Cars?",
+    "Country A: 1 Car costs 4 Computers (40/10). Country B: 1 Car costs 5 Computers (25/5). 4 < 5, so Country A has the lower opportunity cost.",
+    "Country A", // Correct Answer (Index 2)
+    "Country B",
+    "Both have the same advantage.",
+    "Neither country.",
+    "Cannot be determined.",
+    3
+  ],
+  // Q12 (Comparative Advantage - Output Math)
+  [
+    "Using the same table:<br><table border='1' style='border-collapse: collapse; width: 100%;'><tr><th>Country</th><th>Cars</th><th>Computers</th></tr><tr><td>Country A</td><td>10</td><td>40</td></tr><tr><td>Country B</td><td>5</td><td>25</td></tr></table><br>What is Country B's opportunity cost of producing 1 Computer?",
+    "This is an output problem (Other Goes Over). For Country B, to get 25 Computers, they give up 5 Cars. 1 Computer = 5/25 Cars = 1/5 (0.2) Cars.",
+    "5 Cars",
+    "1/5 of a Car", // Correct Answer (Index 3)
+    "5 Computers",
+    "1/4 of a Car",
+    "20 Cars",
+    4
+  ],
+  // Q13 (Comparative Advantage - Input/Time)
+  [
+    "Consider the table below showing <b>labor hours required</b> to produce one unit:<br><table border='1' style='border-collapse: collapse; width: 100%;'><tr><th>Country</th><th>Wheat</th><th>Cloth</th></tr><tr><td>Alpha</td><td>2 hours</td><td>4 hours</td></tr><tr><td>Beta</td><td>5 hours</td><td>15 hours</td></tr></table><br>Which country has the absolute advantage in Cloth, and which has the comparative advantage in Cloth?",
+    "Absolute: Alpha takes less time (4 < 15). Comparative: Alpha cost for 1 Cloth = 4/2 = 2 Wheat. Beta cost for 1 Cloth = 15/5 = 3 Wheat. 2 < 3. Alpha has both.",
+    "Absolute: Beta; Comparative: Beta",
+    "Absolute: Alpha; Comparative: Beta",
+    "Absolute: Alpha; Comparative: Alpha", // Correct Answer (Index 4)
+    "Absolute: Beta; Comparative: Alpha",
+    "Neither has an absolute advantage.",
+    5
+  ],
+  // Q14 (Terms of Trade)
+  [
+    "Nation X produces 10 units of Corn or 20 units of Rice. Nation Y produces 20 units of Corn or 60 units of Rice. Which of the following would be a mutually beneficial term of trade for 1 unit of Corn?",
+    "Opp Costs for 1 Corn: Nation X = 2 Rice (20/10). Nation Y = 3 Rice (60/20). The terms of trade must fall *between* the opportunity costs: 2 Rice < 1 Corn < 3 Rice.",
+    "1 Corn for 1 Rice",
+    "1 Corn for 1.5 Rice",
+    "1 Corn for 2.5 Rice", // Correct Answer (Index 4)
+    "1 Corn for 4 Rice",
+    "1 Corn for 5 Rice",
+    5
+  ],
+  // Q15 (Marginal Analysis)
+  [
+    "A student is deciding how many hours to study. The marginal benefit of the 3rd hour is 10 grade points, and the marginal cost is 8 points of 'fun' lost. The marginal benefit of the 4th hour is 5 grade points, and the marginal cost is 8 points of 'fun' lost. How many hours should they study?",
+    "Decision rule: Do it if MB >= MC. Hour 3: 10 > 8 (Yes). Hour 4: 5 < 8 (No). Stop after 3 hours.",
+    "1 hour",
+    "2 hours",
+    "3 hours", // Correct Answer (Index 4)
+    "4 hours",
+    "5 hours",
+    5
+  ],
+  // Q16 (Utility Maximization)
+  [
+    "You are buying Pizza ($5) and Soda ($2). The Marginal Utility (MU) of the last slice of Pizza is 20 utils. The MU of the last Soda is 10 utils. Are you maximizing utility?",
+    "Utility max rule: MUx/Px = MUy/Py. Pizza: 20/5 = 4 utils/$. Soda: 10/2 = 5 utils/$. Since 5 > 4, you get more 'bang for your buck' from Soda. You should buy less Pizza and more Soda.",
+    "Yes, because 20 > 10.",
+    "No, you should buy more Pizza and less Soda.",
+    "No, you should buy more Soda and less Pizza.", // Correct Answer (Index 4)
+    "Yes, because the prices are different.",
+    "Cannot determine without total income.",
+    5
+  ],
+  // Q17 (Circular Flow)
+  [
+    "In the Circular Flow Diagram, what do households provide to the factor market?",
+    "Households own the factors of production (Land, Labor, Capital) and sell/rent them to firms in the factor market.",
+    "Goods and services",
+    "Revenue",
+    "Factors of Production (Land, Labor, Capital)", // Correct Answer (Index 4)
+    "Taxes only",
+    "Subsidies",
+    5
+  ],
+  // Q18 (Circular Flow - Money)
+  [
+    "In the Circular Flow model, when firms pay wages to households, this represents:",
+    "Firms pay costs (wages, rent, interest) in the factor market, which becomes income for households.",
+    "Revenue for firms.",
+    "Consumption expenditure.",
+    "Income for households.", // Correct Answer (Index 4)
+    "Transfer payments.",
+    "Product market transactions.",
+    5
+  ],
+  // Q19 (Input Problem - Calculation)
+  [
+    "To produce 1 ton of Steel, Country A needs 10 workers. To produce 1 ton of Steel, Country B needs 20 workers. Who has the absolute advantage in Steel?",
+    "In input problems, the entity that uses *fewer* resources (workers/hours) has the absolute advantage. 10 < 20, so Country A has the advantage.",
+    "Country A", // Correct Answer (Index 2)
+    "Country B",
+    "Both",
+    "Neither",
+    "It depends on the price of steel.",
+    3
+  ],
+  // Q20 (Opportunity Cost - Linear PPC)
+  [
+    "If a Production Possibilities Curve is a straight downward-sloping line, what does this imply about opportunity costs?",
+    "A straight line indicates constant opportunity cost, meaning resources are perfectly adaptable between the two goods.",
+    "Opportunity costs are increasing.",
+    "Opportunity costs are decreasing.",
+    "Opportunity costs are constant.", // Correct Answer (Index 4)
+    "Opportunity costs are zero.",
+    "Resources are specialized.",
+    5
+  ],
+  // Q21 (Implicit Costs)
+  [
+    "An entrepreneur quits a job paying $50,000 a year to start a business. In the first year, the business has Explicit Costs of $20,000 and Revenue of $60,000. What is the Economic Profit?",
+    "Accounting Profit = Rev - Explicit ($60k - $20k = $40k). Economic Profit = Rev - Explicit - Implicit. Implicit cost is the lost salary ($50k). $40k - $50k = -$10,000.",
+    "$40,000",
+    "$10,000",
+    "-$10,000 (Loss)", // Correct Answer (Index 4)
+    "$60,000",
+    "$90,000",
+    5
+  ],
+  // Q22 (Law of Diminishing Marginal Utility)
+  [
+    "The Law of Diminishing Marginal Utility explains why:",
+    "As you consume more of a good, the additional satisfaction (marginal utility) from each subsequent unit decreases. This is why demand curves slope down.",
+    "Supply curves slope upward.",
+    "PPCs are concave.",
+    "Demand curves slope downward.", // Correct Answer (Index 4)
+    "Total utility always decreases.",
+    "People save money.",
+    5
+  ],
+  // Q23 (Capital Stock)
+  [
+    "Net investment in capital stock will generally lead to:",
+    "Increasing the stock of capital (machines, factories) shifts the long-run aggregate supply and the PPC outward, leading to economic growth.",
+    "A movement along the PPC.",
+    "An inward shift of the PPC.",
+    "Economic growth and an outward shift of the PPC.", // Correct Answer (Index 4)
+    "Higher current consumption but lower future consumption.",
+    "A decrease in labor productivity.",
+    5
+  ],
+  // Q24 (Resource Allocation)
+  [
+    "In a mixed economy, how are resources allocated?",
+    "Mixed economies utilize both the price mechanism (markets) and government regulation/intervention to allocate resources.",
+    "Solely by the government.",
+    "Solely by tradition.",
+    "By a combination of market forces and government intervention.", // Correct Answer (Index 4)
+    "Solely by the invisible hand.",
+    "By random chance.",
+    5
+  ],
+  // Q25 (Efficiency)
+  [
+    "Allocative efficiency occurs when:",
+    "Allocative efficiency is producing the specific mix of goods and services that society desires most (where Marginal Benefit = Marginal Cost).",
+    "The economy is producing at a point inside the PPC.",
+    "The economy is producing the mix of goods most highly valued by society.", // Correct Answer (Index 3)
+    "Costs of production are minimized regardless of demand.",
+    "Everyone has equal income.",
+    "Unemployment is at 0%.",
+    4
+  ],
+  // Q26 (Comparative Advantage Calculation)
+  [
+    "Given: USA (100 Planes or 200 Trains). France (50 Planes or 50 Trains). What is the opportunity cost of 1 Plane for France?",
+    "Output problem. France: 50 Planes = 50 Trains. 1 Plane = 1 Train.",
+    "0.5 Trains",
+    "1 Train", // Correct Answer (Index 3)
+    "2 Trains",
+    "50 Trains",
+    "100 Trains",
+    4
+  ],
+  // Q27 (Trade Gain)
+  [
+    "If countries specialize according to comparative advantage and trade, which of the following is true?",
+    "Trade allows countries to consume at a point outside their domestic Production Possibilities Curve.",
+    "They will consume inside their PPC.",
+    "They will consume exactly on their PPC.",
+    "They can consume at a point outside their individual PPCs.", // Correct Answer (Index 4)
+    "One country wins and the other loses.",
+    "Global production decreases.",
+    5
+  ],
+  // Q28 (PPC Shift Factors)
+  [
+    "Which of the following would NOT shift the Production Possibilities Curve outward?",
+    "Reducing unemployment moves the economy from a point inside the curve to a point on the curve. It does not expand the *capacity* (the curve itself).",
+    "An increase in the labor force.",
+    "A discovery of new natural resources.",
+    "A reduction in the unemployment rate.", // Correct Answer (Index 4)
+    "Improvement in technology.",
+    "Better education for workers.",
+    5
+  ],
+  // Q29 (Marginal Analysis Logic)
+  [
+    "Rational decision-making implies that an individual will continue an activity as long as:",
+    "This is the core of marginal analysis: continue as long as the added benefit exceeds the added cost.",
+    "Total benefit exceeds total cost.",
+    "Marginal benefit exceeds marginal cost.", // Correct Answer (Index 3)
+    "Marginal cost is zero.",
+    "Marginal benefit is positive.",
+    "Total utility is increasing.",
+    4
+  ],
+  // Q30 (Transfer Payments)
+  [
+    "Which of the following is NOT considered a factor payment in the circular flow?",
+    "Welfare or social security are transfer payments (government to household) without an exchange of goods/services/factors. Wages (Labor), Rent (Land), and Interest (Capital) are factor payments.",
+    "Wages",
+    "Rent",
+    "Welfare check", // Correct Answer (Index 4)
+    "Interest",
+    "Profit",
+    5
+  ],
+  // Q31 (Specialization)
+  [
+    "Output per worker:<br><table border='1'><tr><td></td><td>Cheese</td><td>Wine</td></tr><tr><td>France</td><td>10</td><td>5</td></tr><tr><td>Italy</td><td>8</td><td>2</td></tr></table><br>Based on the table, which statement is true?",
+    "France Opp Cost for Wine: 1W = 2C. Italy Opp Cost for Wine: 1W = 4C. France has lower cost for Wine. France Opp Cost for Cheese: 1C = 0.5W. Italy Opp Cost for Cheese: 1C = 0.25W. Italy has lower cost for Cheese. France should specialize in Wine.",
+    "France should specialize in Cheese.",
+    "France should specialize in Wine.", // Correct Answer (Index 3)
+    "Italy should specialize in Wine.",
+    "Trade will not benefit either nation.",
+    "France has the comparative advantage in both.",
+    4
+  ],
+  // Q32 (Economic Systems)
+  [
+    "The concept of the 'Invisible Hand' was introduced by Adam Smith to explain:",
+    "The Invisible Hand suggests that self-interested individuals operating in free markets will inadvertently promote the public good/efficiency.",
+    "The role of government in a command economy.",
+    "How self-interest in a market system leads to efficient social outcomes.", // Correct Answer (Index 3)
+    "The necessity of trade barriers.",
+    "Why monopolies form.",
+    "The impact of taxes.",
+    4
+  ],
+  // Q33 (Total Utility vs Marginal Utility)
+  [
+    "If Marginal Utility is positive but decreasing, what is happening to Total Utility?",
+    "As long as MU is positive, each new unit adds to the total. So Total Utility increases, but at a slower (decreasing) rate.",
+    "It is decreasing.",
+    "It is constant.",
+    "It is increasing at a decreasing rate.", // Correct Answer (Index 4)
+    "It is increasing at an increasing rate.",
+    "It is zero.",
+    5
+  ],
+  // Q34 (Total Utility Max)
+  [
+    "Total Utility is maximized when:",
+    "When Marginal Utility hits zero, you have stopped gaining benefit. If you consume more, MU becomes negative and Total Utility drops.",
+    "Marginal Utility is at its highest.",
+    "Marginal Utility is zero.", // Correct Answer (Index 3)
+    "Marginal Utility equals Price.",
+    "Average Utility is maximized.",
+    "Marginal Utility is negative.",
+    4
+  ],
+  // Q35 (Input Trade)
+  [
+    "Input Table (Hours to make 1 unit):<br><table border='1'><tr><td></td><td>Radio</td><td>TV</td></tr><tr><td>Nation A</td><td>2</td><td>6</td></tr><tr><td>Nation B</td><td>4</td><td>8</td></tr></table><br>What is the range of Terms of Trade for 1 TV?",
+    "Nation A Cost of TV: 6/2 = 3 Radios. Nation B Cost of TV: 8/4 = 2 Radios. Terms of trade must be between 2 and 3 Radios.",
+    "Between 1 and 2 Radios.",
+    "Between 2 and 3 Radios.", // Correct Answer (Index 3)
+    "Between 3 and 4 Radios.",
+    "Between 0.5 and 1 Radio.",
+    "There is no basis for trade.",
+    4
+  ],
+  // Q36 (Property Rights)
+  [
+    "Why are well-defined property rights essential for a market economy?",
+    "Property rights provide the incentive for people to invest, innovate, and trade because they know they can keep the rewards of their efforts.",
+    "They ensure the government owns all resources.",
+    "They allow for equal distribution of income.",
+    "They create incentives for investment and trade.", // Correct Answer (Index 4)
+    "They eliminate scarcity.",
+    "They prevent competition.",
+    5
+  ],
+  // Q37 (Production Goods)
+  [
+    "A robot used in a car factory is an example of:",
+    "Capital (specifically physical capital) refers to man-made goods used to produce other goods and services.",
+    "A consumer good.",
+    "Physical Capital.", // Correct Answer (Index 3)
+    "Human Capital.",
+    "Land.",
+    "Labor.",
+    4
+  ],
+  // Q38 (Human Capital)
+  [
+    "Which of the following represents an investment in Human Capital?",
+    "Human capital is the skills, knowledge, and experience possessed by an individual (e.g., education, training).",
+    "Buying a new computer.",
+    "Building a new factory.",
+    "A company paying for employees to take a coding course.", // Correct Answer (Index 4)
+    "Purchasing stocks.",
+    "Saving money in a bank.",
+    5
+  ],
+  // Q39 (Sunk Costs)
+  [
+    "You bought a non-refundable movie ticket for $15. You get to the theater and realize you lost the ticket. To see the movie, you must buy another one. The $15 you lost is:",
+    "Sunk costs are costs that have already been incurred and cannot be recovered. They should be ignored in current decision making.",
+    "An opportunity cost.",
+    "A marginal cost.",
+    "A sunk cost.", // Correct Answer (Index 4)
+    "A variable cost.",
+    "An implicit cost.",
+    5
+  ],
+  // Q40 (Micro vs Macro)
+  [
+    "Which of the following is a Microeconomic topic?",
+    "Microeconomics focuses on individual agents (firms, households) and specific markets. Macro focuses on the economy as a whole (inflation, GDP).",
+    "The national unemployment rate.",
+    "The rate of inflation.",
+    "The decision of a firm to raise the price of its product.", // Correct Answer (Index 4)
+    "The growth rate of GDP.",
+    "Federal government spending policy.",
+    5
+  ],
+  // Q41 (Consumer Sovereignty)
+  [
+    "Consumer sovereignty refers to:",
+    "It means consumers determine what is produced in a market economy by 'voting' with their dollars.",
+    "The government telling consumers what to buy.",
+    "The idea that consumers have the power to decide what gets produced.", // Correct Answer (Index 3)
+    "Consumers producing their own goods.",
+    "The legal rights of consumers to sue firms.",
+    "Monopolies controlling the market.",
+    4
+  ],
+  // Q42 (Utility Calculation)
+  [
+    "Quantity: 1, TU: 10. Quantity: 2, TU: 18. Quantity: 3, TU: 24. What is the Marginal Utility of the 3rd unit?",
+    "MU is the change in Total Utility. From 2 to 3 units, TU goes from 18 to 24. 24 - 18 = 6.",
+    "24",
+    "8",
+    "6", // Correct Answer (Index 4)
+    "4",
+    "18",
+    5
+  ],
+  // Q43 (PPC Unemployment)
+  [
+    "If an economy is operating at a point inside its Production Possibilities Curve, which of the following must be true?",
+    "Points inside the curve represent inefficiency or unemployed resources.",
+    "There is full employment.",
+    "The economy is maximizing efficiency.",
+    "There are unemployed or misallocated resources.", // Correct Answer (Index 4)
+    "The economy is growing.",
+    "Technology has improved.",
+    5
+  ],
+  // Q44 (Circular Flow - Real flow)
+  [
+    "In the circular flow model, the 'real flow' (as opposed to the monetary flow) consists of:",
+    "Real flow involves the physical movement of goods, services, and factors of production. Monetary flow involves money (wages, spending).",
+    "Money and Credit.",
+    "Taxes and Subsidies.",
+    "Goods, Services, and Resources.", // Correct Answer (Index 4)
+    "Savings and Investment.",
+    "Imports and Exports.",
+    5
+  ],
+  // Q45 (Absolute Advantage)
+  [
+    "If Country A can produce 100 widgets with 10 workers, and Country B can produce 100 widgets with 5 workers, who has the Absolute Advantage?",
+    "Absolute advantage is about productivity or efficiency. Country B uses fewer workers to produce the same amount.",
+    "Country A",
+    "Country B", // Correct Answer (Index 3)
+    "Both",
+    "Neither",
+    "Depends on the opportunity cost.",
+    4
+  ],
+  // Q46 (Explicit Costs)
+  [
+    "Which of the following is an Explicit Cost for a bakery?",
+    "Explicit costs involve a direct monetary outlay (paying cash). Implicit costs are opportunity costs (like the owner's time).",
+    "The wages foregone by the owner working at the bakery.",
+    "The rental income foregone by using the building instead of renting it out.",
+    "The money paid for flour and sugar.", // Correct Answer (Index 4)
+    "The interest that could have been earned on the money invested.",
+    "The depreciation of the owner's personal vehicle.",
+    5
+  ],
+  // Q47 (PPC Trade-off)
+  [
+    "A society decides to produce more military goods at the expense of civilian goods. This trade-off is best illustrated by:",
+    "This is the classic 'Guns vs Butter' movement along the PPC.",
+    "A shift of the PPC outward.",
+    "A shift of the PPC inward.",
+    "A movement along the PPC.", // Correct Answer (Index 4)
+    "A movement from inside the PPC to a point on the line.",
+    "A movement from the PPC to a point outside the line.",
+    5
+  ],
+  // Q48 (Product Market)
+  [
+    "In the Product Market of the Circular Flow model:",
+    "In the Product Market, firms sell goods/services and households buy them (consumption).",
+    "Households sell resources.",
+    "Firms sell goods and services to households.", // Correct Answer (Index 3)
+    "Firms buy resources.",
+    "The government collects taxes.",
+    "Investments are made.",
+    4
+  ],
+  // Q49 (Marginal Cost)
+  [
+    "Marginal Cost is defined as:",
+    "Marginal Cost is the cost added by producing one extra item of a product.",
+    "The total cost of production.",
+    "The average cost of production.",
+    "The additional cost incurred from producing one more unit.", // Correct Answer (Index 4)
+    "The fixed cost of production.",
+    "The cost of the first unit produced.",
+    5
+  ],
+  // Q50 (Rational Choice)
+  [
+    "Economists assume that rational people do everything necessary to achieve their goals, meaning they:",
+    "Rationality in economics means responding to incentives and weighing benefits against costs.",
+    "Never make mistakes.",
+    "Always act selfishly.",
+    "Respond to incentives.", // Correct Answer (Index 4)
+    "Have unlimited resources.",
+    "Ignore costs.",
+    5
+  ]
+];
+
+let array = [
+  [-1, 300], // 0
+  [-11, 290], // 100
+  [-21, 275], // 200
+  [-32, 260], // 300
+  [-42, 245], // 400
+  [-53, 230], // 500
+  [-64, 218], // 600
+  [-75, 207], // 700
+  [-83, 197], // 800
+  [-92, 188], // 900
+  [-101, 180], // 1000
+  [-112, 173], // 1100
+  [-125, 167], // 1200
+  [-133, 162], // 1300
+  [-144, 158], // 1400
+  [-152, 154], // 1500
+  [-161, 150], // 1600
+  [-175, 147], // 1700
+  [-183, 144], // 1800
+  [-215, 94], // 1900
+  [-242, 82], // 2000
+  [-275, 73], // 2100
+  [-302, 67], // 2200
+  [-321, 51], // 2300
+  [-349, 42], // 2400
+  [-381, 36], // 2500
+  [-418, 31], // 2600
+  [-427, 27], // 2700
+  [-431, 24], // 2800
+  [-434, 22], // 2900
+  [-436, 21], // 3000
+  [-437, 20], // 3100
+  [-437, 19], // 3200
+  [-437, 19], // 3300
+];
+
+
+// Global variables for Elo rating history and Chart instance
+let ratingHistory = [];
+let attemptCount = 0;
+
+// Preload 25 columns (labels 1 to 25)
+let initialLabels = Array.from({ length: 25 }, (_, i) => i + 1);
+
+// Initialize Chart.js line chart for Elo progression
+const ctx = document.getElementById("eloChart").getContext("2d");
+const eloChart = new Chart(ctx, {
+  type: "line",
+  data: {
+    labels: [], // preloaded with 25 columns
+    datasets: [
+      {
+        label: "Progression",
+        data: [],
+        fill: false,
+        borderColor: "blue",
+        tension: 0.1,
+      },
+    ],
+  },
+  options: {
+    scales: {
+      x: {
+        title: {
+          display: true,
+          text: "Questions Solved",
+        },
+      },
+      y: {
+        beginAtZero: true,
+        suggestedMax: 2300,
+        title: {
+          display: true,
+          text: "Rating",
+        },
+      },
+    },
+  },
+});
+
+setTimeout(preloadAttempts, 1000);
+function preloadAttempts() {
+  attemptCount = -1;
+  for (var i = 0; i < ratingHistory.length; i++) {
+    attemptCount++;
+    // If attemptCount exceeds the preloaded labels, expand the labels array
+    if (attemptCount > eloChart.data.labels.length) {
+      eloChart.data.labels.push(attemptCount);
+    } else {
+      // Otherwise, update the existing label (optional)
+      eloChart.data.labels[attemptCount - 1] = attemptCount - 1;
+    }
+    eloChart.data.datasets[0].data.push(ratingHistory[i]);
+    eloChart.update();
+  }
+  if (ratingHistory.length > 0) {
+    eloChart.data.datasets[0].data.pop();
+    eloChart.update();
+  }
+}
+
+// Function to add a new attempt data point and update labels if needed
+function addAttempt(progressValue) {
+  attemptCount++;
+  ratingHistory.push(progressValue);
+  // If attemptCount exceeds the preloaded labels, expand the labels array
+  if (attemptCount > eloChart.data.labels.length) {
+    eloChart.data.labels.push(attemptCount);
+  } else {
+    // Otherwise, update the existing label (optional)
+    eloChart.data.labels[attemptCount - 1] = attemptCount;
+  }
+  eloChart.data.datasets[0].data.push(progressValue);
+  eloChart.update();
+}
+
+let url = window.location.href;
+let cache = url.split("/class/")[1];
+let progress = 500;
+let notComingAgain = [];
+let problem = 2;
+let questionsSolved = -1;
+let totalProg = 500;
+let problemsCorrect = 0;
+let qs = document.getElementById("qs");
+let acc = document.getElementById("acc");
+let cr = document.getElementById("cr");
+let ar = document.getElementById("ar");
+
+const progressBar = document.getElementById("progressBar");
+const pro = document.getElementById("pro");
+progressBar.style.width = progress / 32 + "%";
+progressBar.textContent = Math.round(progress);
+
+// Initialize rating history with initial progress
+ratingHistory.push(progress);
+eloChart.data.labels.push(attemptCount);
+eloChart.data.datasets[0].data.push(progress);
+eloChart.update();
+
+loadNewQuestion();
+setInterval(progCheck, 100);
+
+function progCheck() {
+  var progres = ar.innerHTML;
+  if (progres < 1200) {
+    document.getElementById("progressBar").style.backgroundColor = "#ff2c00";
+  } else if (progres < 1800) {
+    document.getElementById("progressBar").style.backgroundColor = "#fcaf50";
+  } else if (progres < 2400) {
+    document.getElementById("progressBar").style.backgroundColor = "#4caf50";
+  } else {
+    document.getElementById("progressBar").style.backgroundColor = "#02a2ff";
+  }
+}
+
+function problemWrong() {
+  updateRating(
+    Math.round(
+      array[Math.floor(progress / 100)][0] * ratingJump
+    )
+  );
+  document.getElementById("cor").innerHTML = "Wrong!";
+  document.getElementById("problemOptions").style.display = "none";
+  document.getElementById("solutionOptions").style.display = "inline";
+  document.getElementById("solution").innerHTML = questions[problem][1];
+}
+
+function problemCorrect() {
+  if (progress < 5000) {
+    updateRating(array[Math.floor(progress / 100)][1] * ratingJump);
+  }
+  problemsCorrect++;
+  document.getElementById("cor").innerHTML = "Correct!";
+  document.getElementById("problemOptions").style.display = "none";
+  document.getElementById("solutionOptions").style.display = "inline";
+  document.getElementById("solution").innerHTML = questions[problem][1];
+}
+
+function loadNewQuestion() {
+  var ele = document.getElementsByName("gender");
+  for (var i = 0; i < ele.length; i++) {
+    ele[i].checked = false;
+  }
+  progressBar.innerHTML = parseInt(ar.innerHTML);
+  questionsSolved++;
+  problem = Math.round(progress / 100) - 1;
+  if (progress > 1800 && problem < 25) {
+    problem = 25;
+  } else if (problem > 49) {
+    problem = (problem % 25) + 24;
+  }
+  console.log(notComingAgain);
+  console.log(problem);
+  while (notComingAgain.indexOf(problem) > -1) {
+    problem++;
+  }
+  document.getElementById("problem").innerHTML = questions[problem][0];
+  document.getElementById("problemOptions").style.display = "inline";
+  document.getElementById("solutionOptions").style.display = "none";
+  document.getElementById("o1").innerHTML = questions[problem][2];
+  document.getElementById("o2").innerHTML = questions[problem][3];
+  document.getElementById("o3").innerHTML = questions[problem][4];
+  document.getElementById("o4").innerHTML = questions[problem][5];
+  document.getElementById("o5").innerHTML = questions[problem][6];
+}
+
+function gradeProblem(x) {
+  let id = ["option0", "option1", "option2", "option3", "option4"];
+  notComingAgain.push(problem);
+  if (x) {
+    if (document.getElementById(id[questions[problem][7] - 3]).checked) {
+      //They selected the correct option
+      problemCorrect();
+      totalProg += Math.max(parseInt(ar.innerHTML), progress);
+    } else {
+      //They selected the wrong option
+      problemWrong();
+      totalProg += progress / 2;
+    }
+  } else {
+    //They clicked "See Solution"
+    updateRating(
+      Math.round(
+        array[Math.floor(progress / 100)][0] * ratingJump
+      )
+    );
+    document.getElementById("cor").innerHTML = "Don't worry, you got this!";
+    document.getElementById("problemOptions").style.display = "none";
+    document.getElementById("solutionOptions").style.display = "inline";
+    document.getElementById("solution").innerHTML = questions[problem][1];
+    totalProg += progress / 2;
+  }
+  cr.innerHTML = progress;
+  ar.innerHTML = Math.round(totalProg / (attemptCount + 2));
+  acc.innerHTML =
+    Math.round((problemsCorrect * 100) / (questionsSolved + 1)) + "%";
+  qs.innerHTML = questionsSolved + 1;
+  progressBar.style.width =
+    Math.round(totalProg / (attemptCount + 2)) / 32 + "%";
+
+  if (
+    Math.round(totalProg / (attemptCount + 2)) -
+      parseInt(progressBar.innerHTML) >
+    0
+  ) {
+    progressBar.innerHTML =
+      "<strong>" +
+      Math.round(totalProg / (attemptCount + 2)) +
+      "</strong> (+" +
+      (Math.round(totalProg / (attemptCount + 2)) -
+        parseInt(progressBar.innerHTML)) +
+      ")";
+  } else {
+    progressBar.innerHTML =
+      "<strong>" +
+      Math.round(totalProg / (attemptCount + 2)) +
+      "</strong> (" +
+      (Math.round(totalProg / (attemptCount + 2)) -
+        parseInt(progressBar.innerHTML)) +
+      ")";
+  }
+
+  setTimeout(function () {
+    attemptCount++;
+    ratingHistory.push(Math.round(totalProg / (attemptCount + 1)));
+    if (attemptCount > 25) {
+      eloChart.data.labels.push(attemptCount);
+    }
+    eloChart.data.datasets[0].data.push(
+      Math.round(totalProg / (attemptCount + 1))
+    );
+    eloChart.update();
+  }, 201 * 3);
+}
+
+for (var i = 0; i < initialLabels.length; i++) {
+  eloChart.data.labels.push(initialLabels[i]);
+}
+
+// Updated updateRating function that also updates the Elo progression chart
+function updateRating(amount) {
+  let val = progress;
+  /*for (let i = 200; i >= 1; i--) {
+          setTimeout(function () {
+            val += (amount * i) / 20100;
+            progressBar.style.width = val / 32 + "%";
+            if (amount < 0) {
+              progressBar.innerHTML =
+                "<strong>" + Math.round(val) + "</strong> (" + amount + ")";
+            } else {
+              progressBar.innerHTML =
+                "<strong>" + Math.round(val) + "</strong> (+" + amount + ")";
+            }
+            if (val < 499.5) {
+              progressBar.style.backgroundColor = "#ff0000";
+            } else {
+              progressBar.style.backgroundColor = "#4caf50";
+            }
+          }, i * 3);
+        }*/
+  progress += amount;
+
+  /* After the animation, update the chart with the new rating.
+        setTimeout(function () {
+          attemptCount++;
+          ratingHistory.push(progress);
+          if (attemptCount > 25) {
+            eloChart.data.labels.push(attemptCount);
+          }
+          eloChart.data.datasets[0].data.push(progress);
+          eloChart.update();
+        }, 201 * 3);*/
+}
+// Inject CSS for the popup
+  var popupStyle = document.createElement("style");
+  popupStyle.innerHTML = `
+  .popup-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(0, 0, 0, 0.6);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 10000;
+  }
+  .popup-content {
+    background: #fff;
+    padding: 20px 30px;
+    border-radius: 10px;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+    text-align: center;
+    font-size: 1.2em;
+    max-width: 50%;
+    max-height: 75%;
+    position: relative;
+    overflow-y: scroll;
+  }
+  .close-btn {
+    position: absolute;
+    top: 10px;
+    right: 15px;
+    font-size: 20px;
+    cursor: pointer;
+    background: none;
+    border: none;
+  }
+  @keyframes fadeIn {
+    from { opacity: 0; transform: scale(0.8); }
+    to { opacity: 1; transform: scale(1); }
+  }
+`;
+  document.head.appendChild(popupStyle);
+
+  function showPopup(message) {
+    var overlay = document.createElement("div");
+    overlay.className = "popup-overlay";
+    
+    var content = document.createElement("div");
+    content.className = "popup-content";
+    content.innerHTML = message;
+    
+    var closeButton = document.createElement("button");
+    closeButton.className = "close-btn";
+    closeButton.innerHTML = "&times;";
+    closeButton.onclick = function() {
+      document.body.removeChild(overlay);
+    };
+    
+    overlay.onclick = function(event) {
+      if (event.target === overlay) {
+        document.body.removeChild(overlay);
+      }
+    };
+    
+    content.appendChild(closeButton);
+    overlay.appendChild(content);
+    document.body.appendChild(overlay);
+  }
+
+  var proficiencyShown = false;
+  var masteryShown = false;
+
+  setInterval(function () {
+    if (typeof progress !== "undefined") {
+      if (progress >= 4000 && !proficiencyShown) {
+        proficiencyShown = true;
+        showPopup(
+          "<strong>Proficiency Achieved!</strong><br>You have achieved proficiency by getting to a rating above 4000.<br>"
+        );
+      }
+      if (progress >= 5000 && !masteryShown) {
+        masteryShown = true;
+        showPopup(
+          "<strong>Mastery Achieved!</strong><br>You have achieved mastery by getting to a rating above 5000."
+        );
+      }
+    }
+  }, 500);
+
+  showPopup('<h3>Tutorial - How to Use Elo Practice</h3><iframe width="560" height="315" src="https://www.youtube.com/embed/VYgirFHLwrM?si=h47XOI1EQchj7d-z" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe><br><p>For practice units, we have a database full of questions with each problem having its own problem rating, which you can view under the stats tab. As you get problems right, you will level up your rating, when you miss problems, you lose rating. As your rating gets higher and higher, the problems become more and more difficult. Problems rated above 1800 are real AP questions taken straight from past exams, so you should have plenty of practice. <strong>Consider completed practice as either you completing 25 or more questions or getting to a rating above 1800.</strong><br><br><i>Note: Progress is not saved when you close or refresh the tab</i>'); 
+    </script>
+    </body>
+</html>
 
