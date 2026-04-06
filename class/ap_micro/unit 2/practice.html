@@ -1,0 +1,1244 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Dynamic Progress Bar</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap"
+      rel="stylesheet"
+    />
+    <!-- Include Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <style>
+      
+    #darklabel {
+      color: var(--darklabel);
+    }
+
+    body.dark-mode {
+      --bg-color: #121212;
+      --box-bg: #1e1e1e;
+      --text-color: #f1f1f1;
+      --button-bg: #2196f3;
+      --button-hover: #1976d2;
+      --footer-color: #aaa;
+      --darklabel: #000;
+    }
+
+
+
+      /* Global Styles */
+      body {
+        margin: 0;
+        padding: 0;
+        font-family: "Roboto", sans-serif;
+        background: linear-gradient(135deg, #83a4d4, #b6fbff);
+        color: #333;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        min-height: 100vh;
+      }
+      .container {
+        overflow-y: scroll;
+        position: fixed;
+        top: 20px;
+        bottom: 20px;
+        background: #fff;
+        max-width: 800px;
+        width: 90%;
+        padding: 30px;
+        border-radius: 15px;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+      }
+      /* Chart Styles */
+      #eloChart {
+        margin-bottom: 20px;
+      }
+      /* Progress Bar Styles */
+      .progress-container {
+        width: 100%;
+        background-color: #e0e0e0;
+        border-radius: 25px;
+        overflow: hidden;
+        margin-bottom: 20px;
+      }
+      .progress-bar {
+        width: 0;
+        height: 30px;
+        text-align: center;
+        line-height: 30px;
+        color: white;
+        transition: width 1s ease;
+      }
+      #progressBar {
+        background-color: #ff2c00;
+        transition: width 1s ease, background-color 1.5s ease;
+      }
+      /* Content Styles */
+      h1 {
+        font-size: 2em;
+        margin-bottom: 10px;
+        text-align: center;
+      }
+      h2 {
+        text-align: center;
+      }
+      h4 {
+        font-weight: 500;
+      }
+      .question,
+      .option,
+      .solution {
+        margin-bottom: 15px;
+      }
+      .option input[type="radio"] {
+        margin-right: 10px;
+      }
+      button {
+        background-color: #4caf50;
+        color: #fff;
+        border: none;
+        padding: 10px 20px;
+        font-size: 1em;
+        border-radius: 5px;
+        cursor: pointer;
+        margin-right: 10px;
+        transition: background-color 0.3s ease;
+      }
+      button:hover {
+        background-color: #43a047;
+      }
+      /* Visibility Settings */
+      #problemOptions {
+        display: block;
+      }
+      #solutionOptions {
+        display: none;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <!-- Progress Bar -->
+      <div class="progress-container" id="pro">
+        <div class="progress-bar" id="progressBar">0%</div>
+      </div>
+      <h1>Unit 1 Practice</h1>
+      <div class="question">
+        <h4>
+          <span id="problem">Issue loading question (check console)</span>
+        </h4>
+      </div>
+      <div class="option">
+        <input type="radio" name="gender" id="option0" /><span id="o1"></span
+        ><br />
+        <input type="radio" name="gender" id="option1" /><span id="o2"></span
+        ><br />
+        <input type="radio" name="gender" id="option2" /><span id="o3"></span
+        ><br />
+        <input type="radio" name="gender" id="option3" /><span id="o4"></span
+        ><br />
+        <input type="radio" name="gender" id="option4" /><span id="o5"></span
+        ><br />
+      </div>
+      <div id="problemOptions">
+        <button onclick="gradeProblem(true)">Submit</button>
+        <button onclick="gradeProblem(false)">See Solution</button>
+      </div>
+      <div id="solutionOptions">
+        <strong><span id="cor">Wrong!</span> This is the solution:</strong
+        ><br />
+        <span id="solution"></span><br /><br />
+        <button onclick="loadNewQuestion()">Continue</button>
+      </div>
+      <!-- Elo Progression Chart -->
+      <canvas id="eloChart" width="800" height="200"></canvas>
+      <h4>Stats</h4>
+      <ul>
+        <li>Questions Solved: <c id="qs">0</c></li>
+        <li>Problem Rating: <c id="cr">500</c></li>
+        <li>Accuracy: <c id="acc">N/A</c></li>
+        <li>Actual Rating: <c id="ar">500</c></li>
+      </ul>
+    </div>
+  <script>
+    const ratingJump = 1;
+    const questions = [
+  // Q1 (Law of Demand)
+  [
+    "According to the Law of Demand, an increase in the price of a good will lead to:",
+    "The Law of Demand states there is an inverse relationship between price and quantity demanded, ceteris paribus.",
+    "An increase in demand.",
+    "A decrease in demand.",
+    "A decrease in the quantity demanded.", // Correct Answer (Index 4)
+    "An increase in the quantity demanded.",
+    "A shift of the demand curve to the left.",
+    5
+  ],
+  // Q2 (Law of Supply)
+  [
+    "A firm's supply curve for a product is upward sloping because:",
+    "As price increases, the opportunity cost of not producing the good rises, and firms can cover the higher marginal costs of increasing production.",
+    "Profit margins decrease as price increases.",
+    "Higher prices allow for higher marginal costs of production.", // Correct Answer (Index 3)
+    "Consumers want to buy more at higher prices.",
+    "The income effect outweighs the substitution effect.",
+    "Technology always improves as prices rise.",
+    4
+  ],
+  // Q3 (Substitutes)
+  [
+    "If the price of Coffee increases, what is the likely impact on the market for Tea (a substitute)?",
+    "When the price of a substitute rises, consumers switch to the relatively cheaper alternative, increasing its demand.",
+    "The demand for Tea will decrease.",
+    "The demand for Tea will increase.", // Correct Answer (Index 3)
+    "The quantity demanded of Tea will increase.",
+    "The supply of Tea will decrease.",
+    "The price of Tea will decrease.",
+    4
+  ],
+  // Q4 (Complements)
+  [
+    "If the price of printers decreases, what happens in the market for printer ink cartridges (a complement)?",
+    "Because printers and ink are used together, a lower price for printers increases the demand for ink.",
+    "The demand for ink increases.", // Correct Answer (Index 2)
+    "The demand for ink decreases.",
+    "The supply of ink increases.",
+    "The price of ink decreases.",
+    "The quantity demanded of ink decreases.",
+    3
+  ],
+  // Q5 (Normal vs Inferior)
+  [
+    "If a consumer's income increases and as a result they buy less 'Generic Brand Cereal,' this cereal is classified as:",
+    "Inferior goods have an inverse relationship between income and demand.",
+    "A normal good.",
+    "A luxury good.",
+    "An inferior good.", // Correct Answer (Index 4)
+    "A Giffen good.",
+    "A complementary good.",
+    5
+  ],
+  // Q6 (Supply Shifters - Inputs)
+  [
+    "An increase in the price of lithium, a key input for electric car batteries, will result in:",
+    "An increase in input costs decreases supply (shifts the curve left).",
+    "An outward shift of the demand curve for electric cars.",
+    "A leftward shift of the supply curve for electric cars.", // Correct Answer (Index 3)
+    "A rightward shift of the supply curve for electric cars.",
+    "A movement down along the supply curve for electric cars.",
+    "An increase in the quantity supplied of electric cars.",
+    4
+  ],
+  // Q7 (Equilibrium Changes)
+  [
+    "In a competitive market, a simultaneous increase in demand and a decrease in supply will definitely result in:",
+    "Both shifts push the price up. However, the effect on quantity depends on which shift is larger (ambiguous).",
+    "An increase in equilibrium quantity.",
+    "A decrease in equilibrium quantity.",
+    "An increase in equilibrium price.", // Correct Answer (Index 4)
+    "A decrease in equilibrium price.",
+    "No change in equilibrium price.",
+    5
+  ],
+  // Q8 (Double Shift Ambiguity)
+  [
+    "If demand decreases and supply decreases simultaneously, what is the effect on equilibrium price and quantity?",
+    "Both shifts decrease quantity. However, the decrease in demand lowers price while the decrease in supply raises price, making price change ambiguous.",
+    "Price increases; Quantity is ambiguous.",
+    "Price decreases; Quantity is ambiguous.",
+    "Quantity decreases; Price is ambiguous.", // Correct Answer (Index 4)
+    "Quantity increases; Price is ambiguous.",
+    "Both price and quantity decrease.",
+    5
+  ],
+  // Q9 (Price Elasticity of Demand - Calculation)
+  [
+    "If the price of a good rises by 10% and the quantity demanded falls by 20%, the price elasticity of demand is:",
+    "Elasticity = % Change in Q / % Change in P. 20% / 10% = 2. Since 2 > 1, it is elastic.",
+    "0.5 and inelastic.",
+    "2.0 and elastic.", // Correct Answer (Index 3)
+    "1.0 and unit elastic.",
+    "0.2 and inelastic.",
+    "Infinite and perfectly elastic.",
+    4
+  ],
+  // Q10 (Total Revenue Test)
+  [
+    "A monopolist lowers the price of its product and finds that its total revenue increases. This indicates that the demand for the product is:",
+    "If price and Total Revenue move in opposite directions, demand is elastic.",
+    "Inelastic.",
+    "Unit Elastic.",
+    "Elastic.", // Correct Answer (Index 4)
+    "Perfectly Inelastic.",
+    "Income Elastic.",
+    5
+  ],
+  // Q11 (Perfectly Inelastic Demand)
+  [
+    "A demand curve that is perfectly vertical suggests that:",
+    "A vertical demand curve means quantity demanded remains the same regardless of price changes (Elasticity = 0).",
+    "Demand is perfectly elastic.",
+    "The good has many substitutes.",
+    "The price elasticity of demand is zero.", // Correct Answer (Index 4)
+    "The good is a luxury.",
+    "A small change in price leads to an infinite change in quantity.",
+    5
+  ],
+  // Q12 (Income Elasticity)
+  [
+    "If the income elasticity of demand for a good is -0.5, the good is:",
+    "Negative income elasticity indicates an inferior good.",
+    "A normal good.",
+    "An inferior good.", // Correct Answer (Index 3)
+    "A substitute.",
+    "A complement.",
+    "Elastic.",
+    4
+  ],
+  // Q13 (Cross-Price Elasticity)
+  [
+    "The cross-price elasticity of demand between Good X and Good Y is 1.2. This implies that the two goods are:",
+    "A positive cross-price elasticity indicates that as the price of one rises, the demand for the other rises (substitutes).",
+    "Complements.",
+    "Substitutes.", // Correct Answer (Index 3)
+    "Inferior goods.",
+    "Normal goods.",
+    "Unrelated.",
+    4
+  ],
+  // Q14 (Consumer Surplus Definition)
+  [
+    "Consumer surplus is defined as:",
+    "It is the difference between the maximum price a consumer is willing to pay and the actual price paid.",
+    "The total amount spent by consumers.",
+    "The difference between the price and the marginal cost of production.",
+    "The difference between the maximum amount a consumer is willing to pay and the market price.", // Correct Answer (Index 4)
+    "The area above the demand curve.",
+    "The profit made by firms.",
+    5
+  ],
+  // Q15 (Producer Surplus Change)
+  [
+    "If the market price of a good increases, what happens to the producer surplus?",
+    "A higher price increases the gap between the price and the minimum acceptable supply price for existing and new producers.",
+    "It decreases.",
+    "It increases.", // Correct Answer (Index 3)
+    "It stays the same.",
+    "It becomes zero.",
+    "It equals the deadweight loss.",
+    4
+  ],
+  // Q16 (Price Ceiling)
+  [
+    "An effective (binding) price ceiling will result in:",
+    "A binding price ceiling is set below equilibrium, causing quantity demanded to exceed quantity supplied (shortage).",
+    "A surplus of the good.",
+    "An increase in the quantity supplied.",
+    "A shortage of the good.", // Correct Answer (Index 4)
+    "A decrease in the quantity demanded.",
+    "The market remaining at equilibrium.",
+    5
+  ],
+  // Q17 (Price Floor)
+  [
+    "A binding price floor is usually set:",
+    "To be binding (effective), a floor must be set above the equilibrium price to prevent it from falling.",
+    "Below the equilibrium price, resulting in a shortage.",
+    "Above the equilibrium price, resulting in a surplus.", // Correct Answer (Index 3)
+    "At the equilibrium price.",
+    "To help consumers pay less.",
+    "By the forces of supply and demand.",
+    4
+  ],
+  // Q18 (Deadweight Loss)
+  [
+    "Deadweight loss occurs in a market when:",
+    "DWL is the loss of total surplus (consumer + producer) that occurs when the economy produces at an inefficient level (where MB != MC).",
+    "Consumer surplus is maximized.",
+    "Producer surplus is maximized.",
+    "The total surplus is not maximized due to underproduction or overproduction.", // Correct Answer (Index 4)
+    "The government collects tax revenue.",
+    "Equilibrium is reached.",
+    5
+  ],
+  // Q19 (Tax Incidence - Elasticity)
+  [
+    "If the demand for a product is perfectly inelastic and the government imposes an excise tax on the producers, who bears the burden of the tax?",
+    "If consumers are completely insensitive to price (perfectly inelastic), producers can pass 100% of the tax onto them.",
+    "The producers bear the entire burden.",
+    "The consumers bear the entire burden.", // Correct Answer (Index 3)
+    "The government bears the burden.",
+    "The burden is shared equally.",
+    "There is no tax burden.",
+    4
+  ],
+  // Q20 (Tax Incidence - General)
+  [
+    "The burden of an excise tax falls more heavily on the sellers when:",
+    "The 'Side with the least elasticity pays the most.' Sellers pay more if they are less flexible (inelastic) than buyers.",
+    "Demand is more elastic than supply.", // Correct Answer (Index 2)
+    "Supply is more elastic than demand.",
+    "Demand is perfectly inelastic.",
+    "The tax is collected from consumers.",
+    "The product is a luxury.",
+    3
+  ],
+  // Q21 (Utility Maximization Rule)
+  [
+    "To maximize utility, a consumer with a fixed budget should allocate spending such that:",
+    "The Equimarginal Principle: MU per dollar spent must be equal across all goods.",
+    "The total utility of all goods is equal.",
+    "The marginal utility of the last unit of each good is equal.",
+    "The marginal utility per dollar spent on each good is equal.", // Correct Answer (Index 4)
+    "The price of each good is equal.",
+    "The consumer buys only the cheapest good.",
+    5
+  ],
+  // Q22 (Utility Calculation)
+  [
+    "A consumer spends all income on apples ($1) and bananas ($2). If the MU of the last apple is 10 and the MU of the last banana is 30, the consumer should:",
+    "Apple: 10/$1 = 10. Banana: 30/$2 = 15. Since 15 > 10, the consumer gets more utility per dollar from bananas.",
+    "Buy more apples and fewer bananas.",
+    "Buy more bananas and fewer apples.", // Correct Answer (Index 3)
+    "Not change their consumption.",
+    "Buy only apples.",
+    "Buy only bananas.",
+    4
+  ],
+  // Q23 (Excise Tax Effect)
+  [
+    "When an excise tax is imposed on a good, the price paid by consumers usually rises by:",
+    "Unless demand is perfectly inelastic or supply is perfectly elastic, the tax burden is shared, so the price rises by less than the full tax amount.",
+    "The full amount of the tax.",
+    "More than the amount of the tax.",
+    "Less than the amount of the tax.", // Correct Answer (Index 4)
+    "Zero.",
+    "The amount of the deadweight loss.",
+    5
+  ],
+  // Q24 (Substitution Effect)
+  [
+    "The substitution effect of a price decrease for a good causes:",
+    "When a price drops, that good becomes relatively cheaper compared to others, so consumers substitute toward it.",
+    "Consumers to buy more of the good because their purchasing power has increased.",
+    "Consumers to buy more of the good because it is now relatively cheaper than other goods.", // Correct Answer (Index 3)
+    "The demand curve to shift to the right.",
+    "The supply curve to shift to the left.",
+    "A decrease in the quantity demanded.",
+    4
+  ],
+  // Q25 (Income Effect)
+  [
+    "For a normal good, the income effect of a price increase causes:",
+    "A price increase reduces real purchasing power. For a normal good, less income leads to less quantity demanded.",
+    "A decrease in the quantity demanded.", // Correct Answer (Index 2)
+    "An increase in the quantity demanded.",
+    "No change in the quantity demanded.",
+    "The demand curve to shift right.",
+    "The supply curve to shift left.",
+    3
+  ],
+  // Q26 (World Trade - Importer)
+  [
+    "If the world price of a good is lower than the domestic equilibrium price, a country that opens up to trade will:",
+    "Domestic consumers will prefer the cheaper world price, leading to imports. Domestic production falls, consumption rises.",
+    "Export the good.",
+    "Import the good.", // Correct Answer (Index 3)
+    "See an increase in producer surplus.",
+    "See a decrease in consumer surplus.",
+    "Experience a deadweight loss.",
+    4
+  ],
+  // Q27 (Tariff Effect)
+  [
+    "A tariff on an imported good results in which of the following?",
+    "Tariffs raise the price, benefiting domestic producers (increasing PS) and the government (revenue), but hurting consumers (decreasing CS).",
+    "An increase in consumer surplus.",
+    "A decrease in domestic production.",
+    "An increase in government tax revenue.", // Correct Answer (Index 4)
+    "A decrease in the domestic price.",
+    "An increase in total surplus.",
+    5
+  ],
+  // Q28 (Elasticity and Tax Revenue)
+  [
+    "The government wants to raise tax revenue with the least possible deadweight loss. It should tax goods with:",
+    "Inelastic supply and demand mean quantity won't change much despite the tax, minimizing the 'lost' transactions (DWL).",
+    "High price elasticity of demand.",
+    "Low price elasticity of demand and supply.", // Correct Answer (Index 3)
+    "Many close substitutes.",
+    "High income elasticity.",
+    "Negative cross-price elasticity.",
+    4
+  ],
+  // Q29 (Quantity Demanded vs Demand)
+  [
+    "A change in which of the following will cause a movement *along* the supply curve rather than a shift?",
+    "Only a change in the price of the good itself causes a movement along the curve (change in quantity supplied).",
+    "Number of sellers.",
+    "Expectations about future prices.",
+    "The price of the good itself.", // Correct Answer (Index 4)
+    "Technology.",
+    "Cost of resources.",
+    5
+  ],
+  // Q30 (Marginal Utility Calculation)
+  [
+    "Quantity: 0, TU: 0 | Quantity: 1, TU: 20 | Quantity: 2, TU: 35 | Quantity: 3, TU: 45. What is the Marginal Utility of the 2nd unit?",
+    "MU = Change in TU / Change in Q. (35 - 20) / (2 - 1) = 15.",
+    "35",
+    "20",
+    "15", // Correct Answer (Index 4)
+    "10",
+    "5",
+    5
+  ],
+  // Q31 (Consumer Choice - Table)
+  [
+    "A consumer has $10. Burgers cost $2 (MU=20) and Fries cost $1 (MU=12). Is the consumer maximizing utility?",
+    "Burgers: 20/$2 = 10. Fries: 12/$1 = 12. Since 12 > 10, the consumer should buy more fries and fewer burgers.",
+    "Yes, the MU per dollar is equal.",
+    "No, buy more Burgers.",
+    "No, buy more Fries.", // Correct Answer (Index 4)
+    "No, buy more of both.",
+    "Yes, because they spent all their money.",
+    5
+  ],
+  // Q32 (Supply and Demand - Graph Based)
+  [
+    "In a standard supply and demand graph, if the current price is *above* the equilibrium price:",
+    "High prices encourage production (high Qs) but discourage buying (low Qd), leading to a surplus.",
+    "Demand will shift right.",
+    "A shortage will occur.",
+    "A surplus will occur.", // Correct Answer (Index 4)
+    "The price will rise further.",
+    "Quantity demanded will exceed quantity supplied.",
+    5
+  ],
+  // Q33 (Total Utility Trend)
+  [
+    "When marginal utility is negative, total utility is:",
+    "Negative marginal utility means the next unit actually makes you worse off, reducing the total sum of satisfaction.",
+    "Increasing.",
+    "Decreasing.", // Correct Answer (Index 3)
+    "At its maximum.",
+    "Zero.",
+    "Constant.",
+    4
+  ],
+  // Q34 (Unit Elasticity)
+  [
+    "If the price of a good increases by 5% and total revenue remains unchanged, the price elasticity of demand is:",
+    "When P and TR have no relationship (TR stays constant), the elasticity is exactly 1 (Unit Elastic).",
+    "0",
+    "Greater than 1.",
+    "Equal to 1.", // Correct Answer (Index 4)
+    "Less than 1.",
+    "Infinite.",
+    5
+  ],
+  // Q35 (Market Efficiency)
+  [
+    "At the equilibrium price in a competitive market, which of the following is true?",
+    "Equilibrium maximizes the sum of CS and PS, achieving allocative efficiency.",
+    "Consumer surplus is zero.",
+    "Producer surplus is zero.",
+    "Total surplus is maximized.", // Correct Answer (Index 4)
+    "Deadweight loss is maximized.",
+    "Marginal benefit is less than marginal cost.",
+    5
+  ],
+  // Q36 (Incidence and Supply Elasticity)
+  [
+    "If the supply of a good is perfectly elastic, who bears the burden of an excise tax?",
+    "Perfectly elastic supply means producers are extremely sensitive to price. They will provide zero if they have to pay the tax, forcing consumers to pay the full amount.",
+    "Sellers only.",
+    "Consumers only.", // Correct Answer (Index 3)
+    "Shared equally.",
+    "The government.",
+    "No one.",
+    4
+  ],
+  // Q37 (Determinants of Elasticity)
+  [
+    "Which of the following would make the demand for a product more elastic?",
+    "The presence of many substitutes allows consumers to easily switch if the price rises.",
+    "The product is a necessity.",
+    "A short time period for adjustment.",
+    "The availability of many close substitutes.", // Correct Answer (Index 4)
+    "The product is a small part of the consumer's budget.",
+    "The product is addictive.",
+    5
+  ],
+  // Q38 (Binding Ceiling Visual)
+  [
+    "If the equilibrium price of a gallon of milk is $3.00 and the government imposes a price ceiling of $2.00, what occurs?",
+    "A ceiling below equilibrium is binding, causing a shortage.",
+    "A surplus of milk.",
+    "A shortage of milk.", // Correct Answer (Index 3)
+    "An increase in milk production.",
+    "No change in the market.",
+    "A shift in the demand curve.",
+    4
+  ],
+  // Q39 (Exporting Country Surplus)
+  [
+    "When a country exports a good because the world price is higher than the domestic price:",
+    "Domestic producers get a higher price (PS increases), but domestic consumers must also pay that higher price (CS decreases).",
+    "Consumer surplus increases and producer surplus decreases.",
+    "Producer surplus increases and consumer surplus decreases.", // Correct Answer (Index 3)
+    "Both consumer and producer surplus increase.",
+    "Total surplus decreases.",
+    "The country experiences a deadweight loss.",
+    4
+  ],
+  // Q40 (Tax Revenue Calculation)
+  [
+    "If a $2 per unit tax is imposed and the equilibrium quantity falls from 100 to 80 units, the government tax revenue is:",
+    "Tax Revenue = Tax per unit x Quantity sold after tax. $2 x 80 = $160.",
+    "$200",
+    "$160", // Correct Answer (Index 3)
+    "$40",
+    "$20",
+    "$100",
+    4
+  ],
+  // Q41 (Marginal Benefit)
+  [
+    "The demand curve is often referred to as:",
+    "The demand curve represents the maximum willingness to pay for each additional unit.",
+    "The marginal cost curve.",
+    "The total utility curve.",
+    "The marginal benefit curve.", // Correct Answer (Index 4)
+    "The producer surplus curve.",
+    "The supply curve.",
+    5
+  ],
+  // Q42 (Shortage and Price)
+  [
+    "If a shortage exists in a market, we can expect that:",
+    "Shortages put upward pressure on prices as consumers outbid each other for limited supply.",
+    "Price will fall to eliminate the shortage.",
+    "Price will rise to eliminate the shortage.", // Correct Answer (Index 3)
+    "Demand will shift left.",
+    "Supply will shift right.",
+    "The government will mandate a lower price.",
+    4
+  ],
+  // Q43 (Supply Shift - Expectations)
+  [
+    "If producers expect the price of their product to rise significantly next month, what happens to current supply?",
+    "Producers will hold back stock now to sell at a higher price later, decreasing current supply.",
+    "Current supply increases.",
+    "Current supply decreases.", // Correct Answer (Index 3)
+    "Current demand decreases.",
+    "Quantity supplied increases.",
+    "No change in current supply.",
+    4
+  ],
+  // Q44 (Inferior Good - Income Decrease)
+  [
+    "If 'Good X' is an inferior good, a decrease in consumer income will:",
+    "For inferior goods, less income leads to higher demand (shift right).",
+    "Shift the demand curve for X to the left.",
+    "Shift the demand curve for X to the right.", // Correct Answer (Index 3)
+    "Decrease the quantity demanded of X.",
+    "Cause a movement along the demand curve.",
+    "Shift the supply curve to the right.",
+    4
+  ],
+  // Q45 (Elasticity of Supply - Time)
+  [
+    "The price elasticity of supply is generally:",
+    "Over time, firms can adjust production levels, build new factories, or enter/exit the market, making supply more flexible.",
+    "More elastic in the long run than in the short run.", // Correct Answer (Index 2)
+    "More inelastic in the long run than in the short run.",
+    "Constant regardless of time.",
+    "Zero in the long run.",
+    "Negative.",
+    3
+  ],
+  // Q46 (Producer Surplus Area)
+  [
+    "On a graph, producer surplus is the area:",
+    "It is the area below the price and above the supply curve.",
+    "Above the demand curve and below the price.",
+    "Below the price and above the supply curve.", // Correct Answer (Index 3)
+    "Below the demand curve and above the supply curve.",
+    "Under the entire supply curve.",
+    "Between the demand and supply curves.",
+    4
+  ],
+  // Q47 (Cross Price - Zero)
+  [
+    "If the cross-price elasticity of demand between two goods is zero, the goods are:",
+    "Zero elasticity means a price change in one has no effect on the demand for the other.",
+    "Substitutes.",
+    "Complements.",
+    "Unrelated.", // Correct Answer (Index 4)
+    "Inferior.",
+    "Perfectly elastic.",
+    5
+  ],
+  // Q48 (Utility - Budget Exhaustion)
+  [
+    "A consumer is maximizing utility with goods A and B. If the price of good A falls, the consumer will:",
+    "A lower price for A increases MU/P for A. To restore equilibrium, they buy more A (decreasing its MU) until MU/P is equal again.",
+    "Buy more of good A.", // Correct Answer (Index 2)
+    "Buy less of good A.",
+    "Not change their behavior.",
+    "Increase the marginal utility of A.",
+    "Decrease the total utility of A.",
+    3
+  ],
+  // Q49 (Total Surplus Calculation)
+  [
+    "If the market is at equilibrium, and Consumer Surplus is $50 and Producer Surplus is $40, what is the Total Surplus?",
+    "Total Surplus = CS + PS. $50 + $40 = $90.",
+    "$10",
+    "$90", // Correct Answer (Index 3)
+    "$50",
+    "$40",
+    "$200",
+    4
+  ],
+  // Q50 (Subsidy Effect)
+  [
+    "A government subsidy to the producers of a product will:",
+    "Subsidies effectively lower production costs, shifting the supply curve to the right.",
+    "Shift the demand curve to the right.",
+    "Shift the supply curve to the right.", // Correct Answer (Index 3)
+    "Shift the supply curve to the left.",
+    "Increase the price paid by consumers.",
+    "Decrease the quantity sold.",
+    4
+  ],
+  // Q51: Market Equilibrium & Surplus
+  [
+    "Based on the graph below, if the government imposes a price floor at $8, what will be the resulting surplus?<br><br>" +
+    "<div style='position:relative; width:200px; height:150px; border-left:2px solid black; border-bottom:2px solid black; margin:20px; font-family:Arial;'>" +
+    "  <div style='position:absolute; bottom:-25px; left:80px;'>Quantity</div>" +
+    "  <div style='position:absolute; top:50px; left:-45px; transform:rotate(-90deg);'>Price</div>" +
+    "  <div style='position:absolute; top:20px; right:20px; color:blue;'>S</div>" +
+    "  <div style='position:absolute; bottom:20px; right:20px; color:red;'>D</div>" +
+    "  <svg width='200' height='150' style='position:absolute; top:0; left:0;'>" +
+    "    <line x1='20' y1='130' x2='180' y2='20' stroke='blue' stroke-width='2' />" + // Supply
+    "    <line x1='20' y1='20' x2='180' y2='130' stroke='red' stroke-width='2' />" +  // Demand
+    "    <line x1='0' y1='40' x2='200' y2='40' stroke='black' stroke-dasharray='4' />" + // Price Floor at $8
+    "    <text x='5' y='35' font-size='12'>$8</text>" +
+    "    <circle cx='60' y='40' r='3' fill='black' />" + // Qd
+    "    <circle cx='140' y='40' r='3' fill='black' />" + // Qs
+    "    <text x='55' y='145' font-size='12'>10</text>" +
+    "    <text x='135' y='145' font-size='12'>30</text>" +
+    "  </svg>" +
+    "</div>",
+    "At a price of $8, the Quantity Supplied (Qs) is 30 and the Quantity Demanded (Qd) is 10. Surplus = Qs - Qd = 30 - 10 = 20.",
+    "5 units",
+    "10 units",
+    "20 units", // Correct Answer (Index 4)
+    "30 units",
+    "40 units",
+    5
+  ],
+
+  // Q52: Tax Incidence & Deadweight Loss
+  [
+    "In the graph below, the shaded area represents which of the following after an excise tax is imposed?<br><br>" +
+    "<div style='position:relative; width:200px; height:150px; border-left:2px solid black; border-bottom:2px solid black; margin:20px;'>" +
+    "  <svg width='200' height='150' style='position:absolute; top:0; left:0;'>" +
+    "    <line x1='20' y1='130' x2='180' y2='20' stroke='blue' stroke-width='2' />" + // S
+    "    <line x1='20' y1='20' x2='180' y2='130' stroke='red' stroke-width='2' />" +  // D
+    "    <line x1='20' y1='110' x2='180' y2='0' stroke='blue' stroke-dasharray='2' />" + // S + tax
+    "    <polygon points='100,75 80,60 80,90' fill='rgba(0,0,0,0.3)' />" + // DWL Triangle
+    "    <text x='180' y='15' font-size='10'>Stax</text>" +
+    "  </svg>" +
+    "</div>",
+    "The triangle pointing toward the original equilibrium represents trades that no longer occur due to the tax, which is the Deadweight Loss (DWL).",
+    "Consumer Surplus",
+    "Producer Surplus",
+    "Tax Revenue",
+    "Deadweight Loss", // Correct Answer (Index 5)
+    "External Benefit",
+    6
+  ],
+
+  // Q53: Elasticity along a Linear Demand Curve
+  [
+    "At which point on the demand curve below is the price elasticity of demand unit elastic ($E_d = 1$)?<br><br>" +
+    "<div style='position:relative; width:200px; height:150px; border-left:2px solid black; border-bottom:2px solid black; margin:20px;'>" +
+    "  <svg width='200' height='150' style='position:absolute; top:0; left:0;'>" +
+    "    <line x1='20' y1='20' x2='180' y2='130' stroke='red' stroke-width='2' />" +
+    "    <circle cx='50' y='42' r='4' fill='black' /><text x='40' y='35'>A</text>" +
+    "    <circle cx='100' y='75' r='4' fill='black' /><text x='95' y='65'>B</text>" +
+    "    <circle cx='150' y='108' r='4' fill='black' /><text x='145' y='100'>C</text>" +
+    "  </svg>" +
+    "</div>",
+    "On a linear demand curve, the midpoint (Point B) is unit elastic. Points above the midpoint (Point A) are elastic, and points below (Point C) are inelastic.",
+    "Point A",
+    "Point B", // Correct Answer (Index 3)
+    "Point C",
+    "All points have the same elasticity",
+    "Elasticity is zero at all points",
+    4
+  ],
+
+  // Q54: Consumer Surplus
+  [
+    "If the market price is $P_1$, which area represents the Consumer Surplus?<br><br>" +
+    "<div style='position:relative; width:200px; height:150px; border-left:2px solid black; border-bottom:2px solid black; margin:20px;'>" +
+    "  <svg width='200' height='150' style='position:absolute; top:0; left:0;'>" +
+    "    <line x1='20' y1='130' x2='180' y2='20' stroke='blue' />" +
+    "    <line x1='20' y1='20' x2='180' y2='130' stroke='red' />" +
+    "    <line x1='0' y1='75' x2='100' y2='75' stroke='black' stroke-dasharray='4' />" +
+    "    <text x='5' y='70'>P1</text>" +
+    "    <text x='40' y='55' font-weight='bold'>X</text>" +
+    "    <text x='40' y='100' font-weight='bold'>Y</text>" +
+    "  </svg>" +
+    "</div>",
+    "Consumer Surplus is the area below the demand curve and above the market price (Area X).",
+    "Area X", // Correct Answer (Index 2)
+    "Area Y",
+    "Area X + Y",
+    "The area under the supply curve",
+    "The entire area under the demand curve",
+    3
+  ],
+
+  // Q55: Effect of an Increase in Demand
+  [
+    "The graph below shows a shift in the market for oranges. Which of the following could have caused this shift?<br><br>" +
+    "<div style='position:relative; width:200px; height:150px; border-left:2px solid black; border-bottom:2px solid black; margin:20px;'>" +
+    "  <svg width='200' height='150' style='position:absolute; top:0; left:0;'>" +
+    "    <line x1='20' y1='130' x2='180' y2='20' stroke='blue' />" +
+    "    <line x1='20' y1='130' x2='180' y2='130' stroke='white' />" + // spacer
+    "    <line x1='20' y1='100' x2='150' y2='10' stroke='red' opacity='0.4' />" + // D1
+    "    <line x1='60' y1='130' x2='190' y2='40' stroke='red' stroke-width='2' />" + // D2
+    "    <text x='160' y='50' color='red'>D2</text>" +
+    "    <path d='M 80 80 L 110 80' stroke='black' marker-end='url(#arrow)' />" +
+    "    <defs><marker id='arrow' markerWidth='10' markerHeight='10' refX='0' refY='3' orient='auto'><path d='M0,0 L0,6 L6,3 z' /></marker></defs>" +
+    "  </svg>" +
+    "</div>",
+    "The graph shows a rightward shift in demand. An increase in the price of a substitute (like apples) would cause consumers to switch to oranges, increasing demand.",
+    "A decrease in the price of oranges.",
+    "An increase in the price of a substitute good.", // Correct Answer (Index 3)
+    "A decrease in the number of orange consumers.",
+    "An increase in the cost of orange fertilizer.",
+    "An increase in the price of a complementary good.",
+    4
+  ]
+];
+
+let array = [
+  [-1, 300], // 0
+  [-11, 290], // 100
+  [-21, 275], // 200
+  [-32, 260], // 300
+  [-42, 245], // 400
+  [-53, 230], // 500
+  [-64, 218], // 600
+  [-75, 207], // 700
+  [-83, 197], // 800
+  [-92, 188], // 900
+  [-101, 180], // 1000
+  [-112, 173], // 1100
+  [-125, 167], // 1200
+  [-133, 162], // 1300
+  [-144, 158], // 1400
+  [-152, 154], // 1500
+  [-161, 150], // 1600
+  [-175, 147], // 1700
+  [-183, 144], // 1800
+  [-215, 94], // 1900
+  [-242, 82], // 2000
+  [-275, 73], // 2100
+  [-302, 67], // 2200
+  [-321, 51], // 2300
+  [-349, 42], // 2400
+  [-381, 36], // 2500
+  [-418, 31], // 2600
+  [-427, 27], // 2700
+  [-431, 24], // 2800
+  [-434, 22], // 2900
+  [-436, 21], // 3000
+  [-437, 20], // 3100
+  [-437, 19], // 3200
+  [-437, 19], // 3300
+];
+
+
+// Global variables for Elo rating history and Chart instance
+let ratingHistory = [];
+let attemptCount = 0;
+
+// Preload 25 columns (labels 1 to 25)
+let initialLabels = Array.from({ length: 25 }, (_, i) => i + 1);
+
+// Initialize Chart.js line chart for Elo progression
+const ctx = document.getElementById("eloChart").getContext("2d");
+const eloChart = new Chart(ctx, {
+  type: "line",
+  data: {
+    labels: [], // preloaded with 25 columns
+    datasets: [
+      {
+        label: "Progression",
+        data: [],
+        fill: false,
+        borderColor: "blue",
+        tension: 0.1,
+      },
+    ],
+  },
+  options: {
+    scales: {
+      x: {
+        title: {
+          display: true,
+          text: "Questions Solved",
+        },
+      },
+      y: {
+        beginAtZero: true,
+        suggestedMax: 2300,
+        title: {
+          display: true,
+          text: "Rating",
+        },
+      },
+    },
+  },
+});
+
+setTimeout(preloadAttempts, 1000);
+function preloadAttempts() {
+  attemptCount = -1;
+  for (var i = 0; i < ratingHistory.length; i++) {
+    attemptCount++;
+    // If attemptCount exceeds the preloaded labels, expand the labels array
+    if (attemptCount > eloChart.data.labels.length) {
+      eloChart.data.labels.push(attemptCount);
+    } else {
+      // Otherwise, update the existing label (optional)
+      eloChart.data.labels[attemptCount - 1] = attemptCount - 1;
+    }
+    eloChart.data.datasets[0].data.push(ratingHistory[i]);
+    eloChart.update();
+  }
+  if (ratingHistory.length > 0) {
+    eloChart.data.datasets[0].data.pop();
+    eloChart.update();
+  }
+}
+
+// Function to add a new attempt data point and update labels if needed
+function addAttempt(progressValue) {
+  attemptCount++;
+  ratingHistory.push(progressValue);
+  // If attemptCount exceeds the preloaded labels, expand the labels array
+  if (attemptCount > eloChart.data.labels.length) {
+    eloChart.data.labels.push(attemptCount);
+  } else {
+    // Otherwise, update the existing label (optional)
+    eloChart.data.labels[attemptCount - 1] = attemptCount;
+  }
+  eloChart.data.datasets[0].data.push(progressValue);
+  eloChart.update();
+}
+
+let url = window.location.href;
+let cache = url.split("/class/")[1];
+let progress = 500;
+let notComingAgain = [];
+let problem = 2;
+let questionsSolved = -1;
+let totalProg = 500;
+let problemsCorrect = 0;
+let qs = document.getElementById("qs");
+let acc = document.getElementById("acc");
+let cr = document.getElementById("cr");
+let ar = document.getElementById("ar");
+
+const progressBar = document.getElementById("progressBar");
+const pro = document.getElementById("pro");
+progressBar.style.width = progress / 32 + "%";
+progressBar.textContent = Math.round(progress);
+
+// Initialize rating history with initial progress
+ratingHistory.push(progress);
+eloChart.data.labels.push(attemptCount);
+eloChart.data.datasets[0].data.push(progress);
+eloChart.update();
+
+loadNewQuestion();
+setInterval(progCheck, 100);
+
+function progCheck() {
+  var progres = ar.innerHTML;
+  if (progres < 1200) {
+    document.getElementById("progressBar").style.backgroundColor = "#ff2c00";
+  } else if (progres < 1800) {
+    document.getElementById("progressBar").style.backgroundColor = "#fcaf50";
+  } else if (progres < 2400) {
+    document.getElementById("progressBar").style.backgroundColor = "#4caf50";
+  } else {
+    document.getElementById("progressBar").style.backgroundColor = "#02a2ff";
+  }
+}
+
+function problemWrong() {
+  updateRating(
+    Math.round(
+      array[Math.floor(progress / 100)][0] * ratingJump
+    )
+  );
+  document.getElementById("cor").innerHTML = "Wrong!";
+  document.getElementById("problemOptions").style.display = "none";
+  document.getElementById("solutionOptions").style.display = "inline";
+  document.getElementById("solution").innerHTML = questions[problem][1];
+}
+
+function problemCorrect() {
+  if (progress < 5000) {
+    updateRating(array[Math.floor(progress / 100)][1] * ratingJump);
+  }
+  problemsCorrect++;
+  document.getElementById("cor").innerHTML = "Correct!";
+  document.getElementById("problemOptions").style.display = "none";
+  document.getElementById("solutionOptions").style.display = "inline";
+  document.getElementById("solution").innerHTML = questions[problem][1];
+}
+
+function loadNewQuestion() {
+  var ele = document.getElementsByName("gender");
+  for (var i = 0; i < ele.length; i++) {
+    ele[i].checked = false;
+  }
+  progressBar.innerHTML = parseInt(ar.innerHTML);
+  questionsSolved++;
+  problem = Math.round(progress / 100) - 1;
+  if (progress > 1800 && problem < 25) {
+    problem = 25;
+  } else if (problem > 49) {
+    problem = (problem % 25) + 24;
+  }
+  console.log(notComingAgain);
+  console.log(problem);
+  while (notComingAgain.indexOf(problem) > -1) {
+    problem++;
+  }
+  document.getElementById("problem").innerHTML = questions[problem][0];
+  document.getElementById("problemOptions").style.display = "inline";
+  document.getElementById("solutionOptions").style.display = "none";
+  document.getElementById("o1").innerHTML = questions[problem][2];
+  document.getElementById("o2").innerHTML = questions[problem][3];
+  document.getElementById("o3").innerHTML = questions[problem][4];
+  document.getElementById("o4").innerHTML = questions[problem][5];
+  document.getElementById("o5").innerHTML = questions[problem][6];
+}
+
+function gradeProblem(x) {
+  let id = ["option0", "option1", "option2", "option3", "option4"];
+  notComingAgain.push(problem);
+  if (x) {
+    if (document.getElementById(id[questions[problem][7] - 3]).checked) {
+      //They selected the correct option
+      problemCorrect();
+      totalProg += Math.max(parseInt(ar.innerHTML), progress);
+    } else {
+      //They selected the wrong option
+      problemWrong();
+      totalProg += progress / 2;
+    }
+  } else {
+    //They clicked "See Solution"
+    updateRating(
+      Math.round(
+        array[Math.floor(progress / 100)][0] * ratingJump
+      )
+    );
+    document.getElementById("cor").innerHTML = "Don't worry, you got this!";
+    document.getElementById("problemOptions").style.display = "none";
+    document.getElementById("solutionOptions").style.display = "inline";
+    document.getElementById("solution").innerHTML = questions[problem][1];
+    totalProg += progress / 2;
+  }
+  cr.innerHTML = progress;
+  ar.innerHTML = Math.round(totalProg / (attemptCount + 2));
+  acc.innerHTML =
+    Math.round((problemsCorrect * 100) / (questionsSolved + 1)) + "%";
+  qs.innerHTML = questionsSolved + 1;
+  progressBar.style.width =
+    Math.round(totalProg / (attemptCount + 2)) / 32 + "%";
+
+  if (
+    Math.round(totalProg / (attemptCount + 2)) -
+      parseInt(progressBar.innerHTML) >
+    0
+  ) {
+    progressBar.innerHTML =
+      "<strong>" +
+      Math.round(totalProg / (attemptCount + 2)) +
+      "</strong> (+" +
+      (Math.round(totalProg / (attemptCount + 2)) -
+        parseInt(progressBar.innerHTML)) +
+      ")";
+  } else {
+    progressBar.innerHTML =
+      "<strong>" +
+      Math.round(totalProg / (attemptCount + 2)) +
+      "</strong> (" +
+      (Math.round(totalProg / (attemptCount + 2)) -
+        parseInt(progressBar.innerHTML)) +
+      ")";
+  }
+
+  setTimeout(function () {
+    attemptCount++;
+    ratingHistory.push(Math.round(totalProg / (attemptCount + 1)));
+    if (attemptCount > 25) {
+      eloChart.data.labels.push(attemptCount);
+    }
+    eloChart.data.datasets[0].data.push(
+      Math.round(totalProg / (attemptCount + 1))
+    );
+    eloChart.update();
+  }, 201 * 3);
+}
+
+for (var i = 0; i < initialLabels.length; i++) {
+  eloChart.data.labels.push(initialLabels[i]);
+}
+
+// Updated updateRating function that also updates the Elo progression chart
+function updateRating(amount) {
+  let val = progress;
+  /*for (let i = 200; i >= 1; i--) {
+          setTimeout(function () {
+            val += (amount * i) / 20100;
+            progressBar.style.width = val / 32 + "%";
+            if (amount < 0) {
+              progressBar.innerHTML =
+                "<strong>" + Math.round(val) + "</strong> (" + amount + ")";
+            } else {
+              progressBar.innerHTML =
+                "<strong>" + Math.round(val) + "</strong> (+" + amount + ")";
+            }
+            if (val < 499.5) {
+              progressBar.style.backgroundColor = "#ff0000";
+            } else {
+              progressBar.style.backgroundColor = "#4caf50";
+            }
+          }, i * 3);
+        }*/
+  progress += amount;
+
+  /* After the animation, update the chart with the new rating.
+        setTimeout(function () {
+          attemptCount++;
+          ratingHistory.push(progress);
+          if (attemptCount > 25) {
+            eloChart.data.labels.push(attemptCount);
+          }
+          eloChart.data.datasets[0].data.push(progress);
+          eloChart.update();
+        }, 201 * 3);*/
+}
+// Inject CSS for the popup
+  var popupStyle = document.createElement("style");
+  popupStyle.innerHTML = `
+  .popup-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(0, 0, 0, 0.6);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 10000;
+  }
+  .popup-content {
+    background: #fff;
+    padding: 20px 30px;
+    border-radius: 10px;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+    text-align: center;
+    font-size: 1.2em;
+    max-width: 50%;
+    max-height: 75%;
+    position: relative;
+    overflow-y: scroll;
+  }
+  .close-btn {
+    position: absolute;
+    top: 10px;
+    right: 15px;
+    font-size: 20px;
+    cursor: pointer;
+    background: none;
+    border: none;
+  }
+  @keyframes fadeIn {
+    from { opacity: 0; transform: scale(0.8); }
+    to { opacity: 1; transform: scale(1); }
+  }
+`;
+  document.head.appendChild(popupStyle);
+
+  function showPopup(message) {
+    var overlay = document.createElement("div");
+    overlay.className = "popup-overlay";
+    
+    var content = document.createElement("div");
+    content.className = "popup-content";
+    content.innerHTML = message;
+    
+    var closeButton = document.createElement("button");
+    closeButton.className = "close-btn";
+    closeButton.innerHTML = "&times;";
+    closeButton.onclick = function() {
+      document.body.removeChild(overlay);
+    };
+    
+    overlay.onclick = function(event) {
+      if (event.target === overlay) {
+        document.body.removeChild(overlay);
+      }
+    };
+    
+    content.appendChild(closeButton);
+    overlay.appendChild(content);
+    document.body.appendChild(overlay);
+  }
+
+  var proficiencyShown = false;
+  var masteryShown = false;
+
+  setInterval(function () {
+    if (typeof progress !== "undefined") {
+      if (progress >= 4000 && !proficiencyShown) {
+        proficiencyShown = true;
+        showPopup(
+          "<strong>Proficiency Achieved!</strong><br>You have achieved proficiency by getting to a rating above 4000.<br>"
+        );
+      }
+      if (progress >= 5000 && !masteryShown) {
+        masteryShown = true;
+        showPopup(
+          "<strong>Mastery Achieved!</strong><br>You have achieved mastery by getting to a rating above 5000."
+        );
+      }
+    }
+  }, 500);
+
+  showPopup('<h3>Tutorial - How to Use Elo Practice</h3><iframe width="560" height="315" src="https://www.youtube.com/embed/VYgirFHLwrM?si=h47XOI1EQchj7d-z" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe><br><p>For practice units, we have a database full of questions with each problem having its own problem rating, which you can view under the stats tab. As you get problems right, you will level up your rating, when you miss problems, you lose rating. As your rating gets higher and higher, the problems become more and more difficult. Problems rated above 1800 are real AP questions taken straight from past exams, so you should have plenty of practice. <strong>Consider completed practice as either you completing 25 or more questions or getting to a rating above 1800.</strong><br><br><i>Note: Progress is not saved when you close or refresh the tab</i>'); 
+    </script>
+    </body>
+</html>
+
