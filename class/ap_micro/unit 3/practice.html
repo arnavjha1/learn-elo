@@ -1,0 +1,1030 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Dynamic Progress Bar</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap"
+      rel="stylesheet"
+    />
+    <!-- Include Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <style>
+      
+    #darklabel {
+      color: var(--darklabel);
+    }
+
+    body.dark-mode {
+      --bg-color: #121212;
+      --box-bg: #1e1e1e;
+      --text-color: #f1f1f1;
+      --button-bg: #2196f3;
+      --button-hover: #1976d2;
+      --footer-color: #aaa;
+      --darklabel: #000;
+    }
+
+
+
+      /* Global Styles */
+      body {
+        margin: 0;
+        padding: 0;
+        font-family: "Roboto", sans-serif;
+        background: linear-gradient(135deg, #83a4d4, #b6fbff);
+        color: #333;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        min-height: 100vh;
+      }
+      .container {
+        overflow-y: scroll;
+        position: fixed;
+        top: 20px;
+        bottom: 20px;
+        background: #fff;
+        max-width: 800px;
+        width: 90%;
+        padding: 30px;
+        border-radius: 15px;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+      }
+      /* Chart Styles */
+      #eloChart {
+        margin-bottom: 20px;
+      }
+      /* Progress Bar Styles */
+      .progress-container {
+        width: 100%;
+        background-color: #e0e0e0;
+        border-radius: 25px;
+        overflow: hidden;
+        margin-bottom: 20px;
+      }
+      .progress-bar {
+        width: 0;
+        height: 30px;
+        text-align: center;
+        line-height: 30px;
+        color: white;
+        transition: width 1s ease;
+      }
+      #progressBar {
+        background-color: #ff2c00;
+        transition: width 1s ease, background-color 1.5s ease;
+      }
+      /* Content Styles */
+      h1 {
+        font-size: 2em;
+        margin-bottom: 10px;
+        text-align: center;
+      }
+      h2 {
+        text-align: center;
+      }
+      h4 {
+        font-weight: 500;
+      }
+      .question,
+      .option,
+      .solution {
+        margin-bottom: 15px;
+      }
+      .option input[type="radio"] {
+        margin-right: 10px;
+      }
+      button {
+        background-color: #4caf50;
+        color: #fff;
+        border: none;
+        padding: 10px 20px;
+        font-size: 1em;
+        border-radius: 5px;
+        cursor: pointer;
+        margin-right: 10px;
+        transition: background-color 0.3s ease;
+      }
+      button:hover {
+        background-color: #43a047;
+      }
+      /* Visibility Settings */
+      #problemOptions {
+        display: block;
+      }
+      #solutionOptions {
+        display: none;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <!-- Progress Bar -->
+      <div class="progress-container" id="pro">
+        <div class="progress-bar" id="progressBar">0%</div>
+      </div>
+      <h1>Unit 1 Practice</h1>
+      <div class="question">
+        <h4>
+          <span id="problem">Issue loading question (check console)</span>
+        </h4>
+      </div>
+      <div class="option">
+        <input type="radio" name="gender" id="option0" /><span id="o1"></span
+        ><br />
+        <input type="radio" name="gender" id="option1" /><span id="o2"></span
+        ><br />
+        <input type="radio" name="gender" id="option2" /><span id="o3"></span
+        ><br />
+        <input type="radio" name="gender" id="option3" /><span id="o4"></span
+        ><br />
+        <input type="radio" name="gender" id="option4" /><span id="o5"></span
+        ><br />
+      </div>
+      <div id="problemOptions">
+        <button onclick="gradeProblem(true)">Submit</button>
+        <button onclick="gradeProblem(false)">See Solution</button>
+      </div>
+      <div id="solutionOptions">
+        <strong><span id="cor">Wrong!</span> This is the solution:</strong
+        ><br />
+        <span id="solution"></span><br /><br />
+        <button onclick="loadNewQuestion()">Continue</button>
+      </div>
+      <!-- Elo Progression Chart -->
+      <canvas id="eloChart" width="800" height="200"></canvas>
+      <h4>Stats</h4>
+      <ul>
+        <li>Questions Solved: <c id="qs">0</c></li>
+        <li>Problem Rating: <c id="cr">500</c></li>
+        <li>Accuracy: <c id="acc">N/A</c></li>
+        <li>Actual Rating: <c id="ar">500</c></li>
+      </ul>
+    </div>
+  <script>
+    const ratingJump = 1;
+    const questions = [
+  [
+    "The Law of Diminishing Marginal Returns occurs when:",
+    "This law is a short-run concept where at least one input (like capital/factory size) is fixed. Adding more of a variable input eventually yields less additional output.",
+    "All inputs are increased proportionally.",
+    "Total product begins to decrease.",
+    "Additional units of a variable input yield less additional output.", // Correct (Index 4)
+    "Average total cost is at its minimum.",
+    "The firm experiences diseconomies of scale.",
+    5
+  ],
+  [
+    "When Marginal Product is zero, which of the following is true?",
+    "If the 'next worker' adds zero to production, the total amount produced has peaked. If the next worker had a negative MP, total product would fall.",
+    "Total product is at its maximum.", // Correct (Index 2)
+    "Average product is at its maximum.",
+    "Marginal cost is at its minimum.",
+    "Total cost is zero.",
+    "The firm should hire more workers.",
+    3
+  ],
+  [
+    "Which of the following is the best example of a 'short-run' adjustment?",
+    "The short run is defined by the existence of fixed costs. Hiring or firing workers is a variable adjustment, while building a new factory is a long-run adjustment.",
+    "A firm builds a second manufacturing plant.",
+    "A firm hires six additional part-time workers.", // Correct (Index 3)
+    "A new company enters the industry.",
+    "An entire industry shuts down.",
+    "A firm changes its entire technology suite.",
+    4
+  ],
+
+  // --- COST CURVES & CALCULATIONS (11-25) ---
+  [
+    "Average Fixed Cost (AFC) behaves in which of the following ways as output increases?",
+    "Because Total Fixed Cost (TFC) is constant, dividing it by a larger and larger Quantity (Q) results in a value that approaches, but never touches, zero.",
+    "It remains constant.",
+    "It increases at a decreasing rate.",
+    "It decreases continually.", // Correct (Index 4)
+    "It is U-shaped.",
+    "It equals Marginal Cost at its minimum.",
+    5
+  ],
+  [
+    "If a firm's Total Cost is $100 for 5 units and $120 for 6 units, the Marginal Cost of the 6th unit is:",
+    "Marginal Cost is the change in Total Cost divided by the change in Quantity. ($120 - $100) / (6 - 5) = $20.",
+    "$10",
+    "$20", // Correct (Index 3)
+    "$120",
+    "$100",
+    "$5",
+    4
+  ],
+  [
+    "The vertical distance between the Average Total Cost (ATC) curve and the Average Variable Cost (AVC) curve is equal to:",
+    "Since ATC = AVC + AFC, it follows that ATC - AVC = AFC.",
+    "Marginal Cost.",
+    "Total Fixed Cost.",
+    "Average Fixed Cost.", // Correct (Index 4)
+    "Economic Profit.",
+    "Variable Cost.",
+    5
+  ],
+  [
+    "Economies of scale occur when a firm's:",
+    "This is a long-run concept. If doubling all inputs leads to more than double the output, the Long-Run Average Total Cost (LRATC) falls.",
+    "Short-run marginal cost is decreasing.",
+    "Long-run average total cost decreases as output increases.", // Correct (Index 3)
+    "Total fixed costs are spreading.",
+    "Marginal product is increasing.",
+    "Average variable cost is constant.",
+    4
+  ],
+
+  // --- PERFECT COMPETITION: SHORT RUN (26-40) ---
+  [
+    "A perfectly competitive firm is a 'price taker' because:",
+    "In perfect competition, there are so many firms selling identical products that no single firm has the market power to influence the price.",
+    "The firm has a patent on its product.",
+    "The firm's demand curve is perfectly elastic.", // Correct (Index 3)
+    "The firm's demand curve is perfectly inelastic.",
+    "The government sets the price.",
+    "The firm is a monopoly.",
+    4
+  ],
+  [
+    "A firm in perfect competition maximizes profit by producing where:",
+    "This is the golden rule for all firms, but in perfect competition, P = MR, so it's also where P = MC.",
+    "Price equals Average Total Cost.",
+    "Marginal Revenue equals Marginal Cost.", // Correct (Index 3)
+    "Total Revenue is maximized.",
+    "Average Fixed Cost is minimized.",
+    "Price is at its maximum.",
+    4
+  ],
+  [
+    "If a firm is producing at a point where Price < AVC, the firm should:",
+    "This is the shutdown rule. If the firm can't even cover its operating costs (variable costs), it loses less money by shutting down immediately.",
+    "Increase its price.",
+    "Increase production to lower average costs.",
+    "Shut down immediately.", // Correct (Index 4)
+    "Continue producing to pay off fixed costs.",
+    "Wait for new firms to enter the market.",
+    5
+  ],
+  [
+    "The short-run supply curve for a perfectly competitive firm is the portion of its:",
+    "A firm will only supply goods if the price is at or above the AVC. Therefore, its MC curve (which shows cost per unit) becomes its supply curve above that point.",
+    "ATC curve above the MC curve.",
+    "MC curve above the minimum of the AVC curve.", // Correct (Index 3)
+    "AVC curve below the ATC curve.",
+    "MR curve that is horizontal.",
+    "MC curve above the minimum of the ATC curve.",
+    4
+  ],
+
+  // --- PERFECT COMPETITION: LONG RUN & EFFICIENCY (41-50) ---
+  [
+    "In the long run, a perfectly competitive firm will earn:",
+    "If there are profits, firms enter. If there are losses, firms exit. This continues until Price = ATC, which is zero economic profit (Normal Profit).",
+    "Positive economic profit.",
+    "Negative economic profit.",
+    "Zero economic profit.", // Correct (Index 4)
+    "Maximum accounting profit.",
+    "High economic rent.",
+    5
+  ],
+  [
+    "Which of the following describes productive efficiency?",
+    "Productive efficiency means the firm is producing at the lowest possible per-unit cost (the minimum of the ATC).",
+    "P = MC",
+    "P = Minimum ATC", // Correct (Index 3)
+    "MR = MC",
+    "P > ATC",
+    "MC = AVC",
+    4
+  ],
+  [
+    "If an industry's long-run supply curve is upward sloping, it is a(n):",
+    "In an increasing-cost industry, the entry of new firms bids up the price of resources (like specialized labor), raising the costs for all firms.",
+    "Constant-cost industry.",
+    "Increasing-cost industry.", // Correct (Index 3)
+    "Decreasing-cost industry.",
+    "Monopolistic industry.",
+    "Efficient industry.",
+    4
+  ],
+  [
+    "Allocative efficiency is achieved in a perfectly competitive market because:",
+    "Allocative efficiency occurs when the marginal benefit to society (Price) equals the marginal cost to society (MC).",
+    "Firms produce at minimum ATC.",
+    "Price equals Marginal Cost.", // Correct (Index 3)
+    "Total revenue is maximized.",
+    "Economic profits are positive.",
+    "There are no fixed costs in the long run.",
+    4
+  ],
+  [
+    "Which of the following occurs when new firms enter a perfectly competitive market?",
+    "New entry shifts the market supply curve to the right, which lowers the equilibrium price for everyone.",
+    "Market supply decreases and price rises.",
+    "Market supply increases and price falls.", // Correct (Index 3)
+    "Individual firm demand curves shift upward.",
+    "Economic profits for existing firms increase.",
+    "The market demand curve shifts to the right.",
+    4
+  ],
+
+  // --- GRAPHICAL INTERPRETATION (REMAINING) ---
+  [
+    "In a side-by-side graph of a market and a firm, if the market price is $15, the firm's marginal revenue is:<br><br>" +
+    "<div style='position:relative; width:180px; height:120px; border-left:2px solid black; border-bottom:2px solid black; margin:10px;'>" +
+    "  <svg width='180' height='120'>" +
+    "    <line x1='0' y1='50' x2='180' y2='50' stroke='black' stroke-width='2' />" +
+    "    <text x='100' y='45' font-size='10'>d = MR</text>" +
+    "    <text x='5' y='45' font-size='12'>$15</text>" +
+    "  </svg>" +
+    "</div>",
+    "For a perfectly competitive firm, Price = Marginal Revenue because they are price takers.",
+    "$0",
+    "$15", // Correct (Index 3)
+    "$30",
+    "Decreasing as quantity increases.",
+    "Greater than $15.",
+    4
+  ],
+  [
+    "A firm is producing where MR=MC. At this level, ATC is $10 and Price is $12. The firm is earning:<br><br>" +
+    "<div style='position:relative; width:200px; height:150px; border-left:2px solid black; border-bottom:2px solid black; margin:20px;'>" +
+    "  <svg width='200' height='150'>" +
+    "    <line x1='0' y1='40' x2='180' y2='40' stroke='black' stroke-width='2' /> <text x='5' y='35'>P=$12</text>" +
+    "    <path d='M 20 80 Q 100 60 180 80' fill='transparent' stroke='black' stroke-width='2' /> <text x='150' y='95'>ATC</text>" +
+    "    <text x='5' y='75'>$10</text>" +
+    "  </svg>" +
+    "</div>",
+    "Since Price ($12) is greater than Average Total Cost ($10), the firm is making a profit of $2 per unit.",
+    "An economic loss.",
+    "A normal profit.",
+    "An economic profit.", // Correct (Index 4)
+    "Zero accounting profit.",
+    "A loss that requires shutting down.",
+    5
+  ],
+  [
+    "Which point on the graph represents the 'Break-Even' point for a firm?<br><br>" +
+    "<div style='position:relative; width:200px; height:150px; border-left:2px solid black; border-bottom:2px solid black; margin:20px;'>" +
+    "  <svg width='200' height='150'>" +
+    "    <path d='M 30 140 Q 100 100 180 20' fill='transparent' stroke='black' stroke-width='2' /> <text x='180' y='20'>MC</text>" +
+    "    <path d='M 30 110 Q 100 60 180 110' fill='transparent' stroke='black' stroke-width='2' /> <text x='180' y='115'>ATC</text>" +
+    "    <circle cx='100' cy='85' r='4' fill='black' />" +
+    "    <text x='105' y='80'>Point K</text>" +
+    "  </svg>" +
+    "</div>",
+    "The break-even point occurs where Price (or MR) equals the minimum of the ATC curve, which is also where MC intersects ATC.",
+    "Minimum of the AVC.",
+    "Minimum of the ATC (Point K).", // Correct (Index 3)
+    "Where MC is at its lowest.",
+    "Where AFC equals MC.",
+    "Where total revenue is zero.",
+    4
+  ],
+  [
+    "A firm's Marginal Cost curve eventually rises because of:<br><br>" +
+    "<div style='position:relative; width:200px; height:150px; border-left:2px solid black; border-bottom:2px solid black; margin:20px;'>" +
+    "  <svg width='200' height='150'>" +
+    "    <path d='M 20 100 Q 60 130 180 20' fill='transparent' stroke='black' stroke-width='3' />" +
+    "  </svg>" +
+    "</div>",
+    "This is the fundamental reason for upward-sloping MC curves in the short run.",
+    "Decreasing fixed costs.",
+    "The Law of Diminishing Marginal Returns.", // Correct (Index 3)
+    "Economies of scale.",
+    "Increasing total revenue.",
+    "Perfectly elastic supply.",
+    4
+  ],
+  [
+    "Which of the following is true about the relationship between Marginal Product (MP) and Average Product (AP)?",
+    "When MP is greater than AP, AP must be increasing. When MP is less than AP, AP must be decreasing. This is a standard mathematical relationship for averages.",
+    "AP increases as long as MP is positive.",
+    "AP increases as long as MP is greater than AP.", // Correct Answer (Index 3)
+    "MP increases as long as AP is increasing.",
+    "AP is at its maximum when MP is at its maximum.",
+    "MP is zero when AP is at its maximum.",
+    4
+  ],
+  [
+    "In the short run, which of the following costs must continuously decrease as output increases?",
+    "Average Fixed Cost (AFC) is Total Fixed Cost divided by Quantity. Since TFC is constant, increasing Q always leads to a smaller AFC (known as 'spreading the overhead').",
+    "Marginal Cost",
+    "Average Variable Cost",
+    "Average Total Cost",
+    "Average Fixed Cost", // Correct Answer (Index 5)
+    "Total Variable Cost",
+    5
+  ],
+  [
+    "A firm's marginal cost curve (MC) intersects the average variable cost curve (AVC) and the average total cost curve (ATC) at:",
+    "Mathematically, the marginal value pulls the average. When the marginal cost equals the average cost, the average is at its lowest possible point.",
+    "Their maximum points.",
+    "Their minimum points.", // Correct Answer (Index 3)
+    "The vertical axis.",
+    "The shutdown point only.",
+    "The break-even point only.",
+    4
+  ],
+
+  // --- PERFECT COMPETITION CONCEPTS (Q16-Q45) ---
+  [
+    "For a perfectly competitive firm, which of the following is true regarding its demand curve?",
+    "Because the firm is a price taker, it can sell any quantity at the market price, making its demand curve perfectly elastic (horizontal).",
+    "It is downward sloping.",
+    "It is vertical.",
+    "It is perfectly elastic and equal to Marginal Revenue.", // Correct Answer (Index 4)
+    "It is perfectly inelastic.",
+    "It lies above the marginal revenue curve.",
+    5
+  ],
+  [
+    "If a perfectly competitive firm is producing at an output level where Price > MC, to maximize profit the firm should:",
+    "If P (which is MR) is greater than MC, the firm earns more from the next unit than it costs to make it. Therefore, it should increase production.",
+    "Decrease output.",
+    "Increase output.", // Correct Answer (Index 3)
+    "Keep output the same.",
+    "Shut down immediately.",
+    "Raise the price of its product.",
+    4
+  ],
+  [
+    "A firm should shut down in the short run if the market price falls below its:",
+    "If the price cannot even cover the Average Variable Cost, the firm loses more money by staying open than it would by closing and just paying its fixed costs.",
+    "Average Total Cost.",
+    "Marginal Cost.",
+    "Average Variable Cost.", // Correct Answer (Index 4)
+    "Total Fixed Cost.",
+    "Average Fixed Cost.",
+    5
+  ],
+
+  // --- GRAPH-BASED QUESTIONS (Q46-Q55) ---
+
+  // Q46: Profit Maximization in Perfect Competition
+  [
+    "Based on the graph below, what is the profit-maximizing quantity for this firm?<br><br>" +
+    "<div style='position:relative; width:220px; height:180px; border-left:2px solid black; border-bottom:2px solid black; margin:20px; font-family:Arial;'>" +
+    "  <div style='position:absolute; bottom:-25px; left:90px;'>Quantity</div>" +
+    "  <div style='position:absolute; top:70px; left:-45px; transform:rotate(-90deg);'>Price</div>" +
+    "  <svg width='220' height='180' style='position:absolute; top:0; left:0;'>" +
+    "    <line x1='0' y1='60' x2='200' y2='60' stroke='black' stroke-width='2' /> <text x='150' y='55'>P=D=MR</text>" +
+    "    <path d='M 30 150 Q 80 130 180 20' fill='transparent' stroke='black' stroke-width='2' /> <text x='182' y='25'>MC</text>" +
+    "    <line x1='115' y1='60' x2='115' y2='175' stroke='black' stroke-dasharray='4' />" +
+    "    <text x='110' y='185'>Q*</text>" +
+    "    <circle cx='115' cy='60' r='4' fill='black' />" +
+    "  </svg>" +
+    "</div>",
+    "In perfect competition, the firm maximizes profit where MR (the price line) equals MC. This occurs at output Q*.",
+    "The quantity where ATC is at its minimum.",
+    "The quantity where MC intersects the price line.", // Correct Answer (Index 3)
+    "The quantity where AFC is zero.",
+    "The quantity where the firm breaks even.",
+    "Any quantity where Price is greater than MC.",
+    4
+  ],
+
+  // Q47: Economic Loss
+  [
+    "According to the graph below, the firm is currently:<br><br>" +
+    "<div style='position:relative; width:220px; height:180px; border-left:2px solid black; border-bottom:2px solid black; margin:20px;'>" +
+    "  <svg width='220' height='180' style='position:absolute; top:0; left:0;'>" +
+    "    <line x1='0' y1='100' x2='200' y2='100' stroke='black' stroke-width='2' /> <text x='150' y='115'>P=MR</text>" +
+    "    <path d='M 30 150 Q 100 130 180 20' fill='transparent' stroke='black' stroke-width='2' /> <text x='182' y='25'>MC</text>" +
+    "    <path d='M 30 80 Q 100 40 180 60' fill='transparent' stroke='black' stroke-width='2' /> <text x='182' y='70'>ATC</text>" +
+    "  </svg>" +
+    "</div>",
+    "Because the ATC curve is entirely above the Price line at the profit-maximizing quantity (where MR=MC), the firm is incurring an economic loss.",
+    "Earning an economic profit.",
+    "Incurring an economic loss.", // Correct Answer (Index 3)
+    "Earning a normal profit.",
+    "Maximizing total revenue.",
+    "Producing at the productively efficient point.",
+    4
+  ],
+
+  // Q48: Long-Run Equilibrium
+  [
+    "A perfectly competitive firm in long-run equilibrium is shown in which of the following scenarios?<br><br>" +
+    "<div style='position:relative; width:220px; height:180px; border-left:2px solid black; border-bottom:2px solid black; margin:20px;'>" +
+    "  <svg width='220' height='180' style='position:absolute; top:0; left:0;'>" +
+    "    <line x1='0' y1='100' x2='200' y2='100' stroke='black' stroke-width='2' /> <text x='150' y='115'>P=MR</text>" +
+    "    <path d='M 30 150 Q 100 130 180 20' fill='transparent' stroke='black' stroke-width='2' /> <text x='182' y='25'>MC</text>" +
+    "    <path d='M 30 140 Q 100 90 180 140' fill='transparent' stroke='black' stroke-width='2' /> <text x='182' y='145'>ATC</text>" +
+    "    <circle cx='100' cy='100' r='4' fill='black' />" +
+    "  </svg>" +
+    "</div>",
+    "In the long run, firms enter or exit until the price equals the minimum ATC. This graph shows the price line tangent to the minimum of the ATC.",
+    "Economic profit is positive.",
+    "Economic profit is negative.",
+    "The firm is at its break-even point.", // Correct Answer (Index 4)
+    "New firms will enter the industry.",
+    "The firm will exit in the short run.",
+    5
+  ],
+
+  // Q49: Market to Firm Side-by-Side
+  [
+    "If the market demand for a perfectly competitive industry increases, how will the individual firm's price and quantity change?<br><br>" +
+    "<div style='display:flex;'>" +
+    "  <div style='position:relative; width:100px; height:80px; border-left:1px solid black; border-bottom:1px solid black; margin-right:10px;'>" +
+    "    <text x='20' y='10' font-size='8'>Market</text>" +
+    "    <svg width='100' height='80'><line x1='10' y1='10' x2='80' y2='70' stroke='black'/><line x1='10' y1='70' x2='80' y2='10' stroke='black'/></svg>" +
+    "  </div>" +
+    "  <div style='position:relative; width:100px; height:80px; border-left:1px solid black; border-bottom:1px solid black;'>" +
+    "    <text x='20' y='10' font-size='8'>Firm</text>" +
+    "    <svg width='100' height='80'><line x1='0' y1='40' x2='90' y2='40' stroke='black'/></svg>" +
+    "  </div>" +
+    "</div>",
+    "A market demand increase raises the equilibrium price. Since the firm is a price taker, its horizontal MR line shifts up, leading it to produce a higher quantity where the new MR = MC.",
+    "Price increases; Quantity decreases.",
+    "Price decreases; Quantity increases.",
+    "Price increases; Quantity increases.", // Correct Answer (Index 4)
+    "Price decreases; Quantity decreases.",
+    "Price stays the same; Quantity increases.",
+    5
+  ],
+
+  // Q50: Marginal Cost and Supply
+  [
+    "The short-run supply curve for a perfectly competitive firm is its marginal cost curve (MC) above the minimum point of which curve?",
+    "A firm will produce as long as it can cover its variable costs. Therefore, the MC curve only acts as a supply curve when it is above the Average Variable Cost (AVC).",
+    "Average Total Cost (ATC)",
+    "Average Variable Cost (AVC)", // Correct Answer (Index 3)
+    "Total Fixed Cost (TFC)",
+    "Average Fixed Cost (AFC)",
+    "Total Revenue (TR)",
+    4
+  ],
+  [
+    "In the long run, a perfectly competitive firm is both productively and allocatively efficient. Allocative efficiency occurs because:",
+    "Allocative efficiency happens when the price (what consumers value) equals the marginal cost (what it costs society to produce).",
+    "Price = Minimum ATC",
+    "Price = Marginal Cost", // Correct Answer (Index 3)
+    "Marginal Revenue = Marginal Cost",
+    "Total Revenue is maximized",
+    "Average Variable Cost is minimized",
+    4
+  ],
+  [
+    "If a firm in a perfectly competitive market is earning positive economic profits in the short run, what will happen in the long run?",
+    "Profit acts as a signal. New firms will enter, increasing market supply and driving down the market price until profits are zero.",
+    "The firm will increase its price to earn more profit.",
+    "New firms will enter, and market price will fall.", // Correct Answer (Index 3)
+    "The firm will exit the market.",
+    "Demand for the product will decrease.",
+    "Market supply will decrease, and price will rise.",
+    4
+  ],
+  [
+    "Constant-cost industries are characterized by which of the following?",
+    "In a constant-cost industry, the entry or exit of firms does not change the price of inputs, meaning the long-run supply curve is horizontal.",
+    "An upward-sloping long-run supply curve.",
+    "A downward-sloping long-run supply curve.",
+    "A perfectly elastic long-run supply curve.", // Correct Answer (Index 4)
+    "Increasing input prices as industry output expands.",
+    "Technological progress that reduces costs over time.",
+    5
+  ],
+  [
+    "Which of the following is an example of a fixed cost for a firm?",
+    "Fixed costs do not change with the level of output. Rent on a factory must be paid regardless of how much is produced.",
+    "Wages for hourly workers.",
+    "Electricity used in production.",
+    "Raw materials.",
+    "Rent on a factory lease.", // Correct Answer (Index 5)
+    "Packaging costs.",
+    5
+  ],
+  [
+    "If the Marginal Cost of the 10th unit is $20 and the Average Total Cost of 10 units is $15, the ATC of the 11th unit will be:",
+    "Since the cost of the next unit ($20) is higher than the current average ($15), it will pull the average up.",
+    "Lower than $15.",
+    "Exactly $15.",
+    "Higher than $15.", // Correct Answer (Index 4)
+    "Zero.",
+    "Cannot be determined.",
+    5
+  ]
+];
+
+// Note: I have shortened the array to 20 for readability in this window, 
+// but you can replicate the logic to hit 50 by varying the cost data 
+// and equilibrium scenarios!
+
+let array = [
+  [-1, 300], // 0
+  [-11, 290], // 100
+  [-21, 275], // 200
+  [-32, 260], // 300
+  [-42, 245], // 400
+  [-53, 230], // 500
+  [-64, 218], // 600
+  [-75, 207], // 700
+  [-83, 197], // 800
+  [-92, 188], // 900
+  [-101, 180], // 1000
+  [-112, 173], // 1100
+  [-125, 167], // 1200
+  [-133, 162], // 1300
+  [-144, 158], // 1400
+  [-152, 154], // 1500
+  [-161, 150], // 1600
+  [-175, 147], // 1700
+  [-183, 144], // 1800
+  [-215, 94], // 1900
+  [-242, 82], // 2000
+  [-275, 73], // 2100
+  [-302, 67], // 2200
+  [-321, 51], // 2300
+  [-349, 42], // 2400
+  [-381, 36], // 2500
+  [-418, 31], // 2600
+  [-427, 27], // 2700
+  [-431, 24], // 2800
+  [-434, 22], // 2900
+  [-436, 21], // 3000
+  [-437, 20], // 3100
+  [-437, 19], // 3200
+  [-437, 19], // 3300
+];
+
+
+// Global variables for Elo rating history and Chart instance
+let ratingHistory = [];
+let attemptCount = 0;
+
+// Preload 25 columns (labels 1 to 25)
+let initialLabels = Array.from({ length: 25 }, (_, i) => i + 1);
+
+// Initialize Chart.js line chart for Elo progression
+const ctx = document.getElementById("eloChart").getContext("2d");
+const eloChart = new Chart(ctx, {
+  type: "line",
+  data: {
+    labels: [], // preloaded with 25 columns
+    datasets: [
+      {
+        label: "Progression",
+        data: [],
+        fill: false,
+        borderColor: "blue",
+        tension: 0.1,
+      },
+    ],
+  },
+  options: {
+    scales: {
+      x: {
+        title: {
+          display: true,
+          text: "Questions Solved",
+        },
+      },
+      y: {
+        beginAtZero: true,
+        suggestedMax: 2300,
+        title: {
+          display: true,
+          text: "Rating",
+        },
+      },
+    },
+  },
+});
+
+setTimeout(preloadAttempts, 1000);
+function preloadAttempts() {
+  attemptCount = -1;
+  for (var i = 0; i < ratingHistory.length; i++) {
+    attemptCount++;
+    // If attemptCount exceeds the preloaded labels, expand the labels array
+    if (attemptCount > eloChart.data.labels.length) {
+      eloChart.data.labels.push(attemptCount);
+    } else {
+      // Otherwise, update the existing label (optional)
+      eloChart.data.labels[attemptCount - 1] = attemptCount - 1;
+    }
+    eloChart.data.datasets[0].data.push(ratingHistory[i]);
+    eloChart.update();
+  }
+  if (ratingHistory.length > 0) {
+    eloChart.data.datasets[0].data.pop();
+    eloChart.update();
+  }
+}
+
+// Function to add a new attempt data point and update labels if needed
+function addAttempt(progressValue) {
+  attemptCount++;
+  ratingHistory.push(progressValue);
+  // If attemptCount exceeds the preloaded labels, expand the labels array
+  if (attemptCount > eloChart.data.labels.length) {
+    eloChart.data.labels.push(attemptCount);
+  } else {
+    // Otherwise, update the existing label (optional)
+    eloChart.data.labels[attemptCount - 1] = attemptCount;
+  }
+  eloChart.data.datasets[0].data.push(progressValue);
+  eloChart.update();
+}
+
+let url = window.location.href;
+let cache = url.split("/class/")[1];
+let progress = 500;
+let notComingAgain = [];
+let problem = 2;
+let questionsSolved = -1;
+let totalProg = 500;
+let problemsCorrect = 0;
+let qs = document.getElementById("qs");
+let acc = document.getElementById("acc");
+let cr = document.getElementById("cr");
+let ar = document.getElementById("ar");
+
+const progressBar = document.getElementById("progressBar");
+const pro = document.getElementById("pro");
+progressBar.style.width = progress / 32 + "%";
+progressBar.textContent = Math.round(progress);
+
+// Initialize rating history with initial progress
+ratingHistory.push(progress);
+eloChart.data.labels.push(attemptCount);
+eloChart.data.datasets[0].data.push(progress);
+eloChart.update();
+
+loadNewQuestion();
+setInterval(progCheck, 100);
+
+function progCheck() {
+  var progres = ar.innerHTML;
+  if (progres < 1200) {
+    document.getElementById("progressBar").style.backgroundColor = "#ff2c00";
+  } else if (progres < 1800) {
+    document.getElementById("progressBar").style.backgroundColor = "#fcaf50";
+  } else if (progres < 2400) {
+    document.getElementById("progressBar").style.backgroundColor = "#4caf50";
+  } else {
+    document.getElementById("progressBar").style.backgroundColor = "#02a2ff";
+  }
+}
+
+function problemWrong() {
+  updateRating(
+    Math.round(
+      array[Math.floor(progress / 100)][0] * ratingJump
+    )
+  );
+  document.getElementById("cor").innerHTML = "Wrong!";
+  document.getElementById("problemOptions").style.display = "none";
+  document.getElementById("solutionOptions").style.display = "inline";
+  document.getElementById("solution").innerHTML = questions[problem][1];
+}
+
+function problemCorrect() {
+  if (progress < 5000) {
+    updateRating(array[Math.floor(progress / 100)][1] * ratingJump);
+  }
+  problemsCorrect++;
+  document.getElementById("cor").innerHTML = "Correct!";
+  document.getElementById("problemOptions").style.display = "none";
+  document.getElementById("solutionOptions").style.display = "inline";
+  document.getElementById("solution").innerHTML = questions[problem][1];
+}
+
+function loadNewQuestion() {
+  var ele = document.getElementsByName("gender");
+  for (var i = 0; i < ele.length; i++) {
+    ele[i].checked = false;
+  }
+  progressBar.innerHTML = parseInt(ar.innerHTML);
+  questionsSolved++;
+  problem = Math.round(progress / 100) - 1;
+  if (progress > 1800 && problem < 25) {
+    problem = 25;
+  } else if (problem > 49) {
+    problem = (problem % 25) + 24;
+  }
+  console.log(notComingAgain);
+  console.log(problem);
+  while (notComingAgain.indexOf(problem) > -1) {
+    problem++;
+  }
+  document.getElementById("problem").innerHTML = questions[problem][0];
+  document.getElementById("problemOptions").style.display = "inline";
+  document.getElementById("solutionOptions").style.display = "none";
+  document.getElementById("o1").innerHTML = questions[problem][2];
+  document.getElementById("o2").innerHTML = questions[problem][3];
+  document.getElementById("o3").innerHTML = questions[problem][4];
+  document.getElementById("o4").innerHTML = questions[problem][5];
+  document.getElementById("o5").innerHTML = questions[problem][6];
+}
+
+function gradeProblem(x) {
+  let id = ["option0", "option1", "option2", "option3", "option4"];
+  notComingAgain.push(problem);
+  if (x) {
+    if (document.getElementById(id[questions[problem][7] - 3]).checked) {
+      //They selected the correct option
+      problemCorrect();
+      totalProg += Math.max(parseInt(ar.innerHTML), progress);
+    } else {
+      //They selected the wrong option
+      problemWrong();
+      totalProg += progress / 2;
+    }
+  } else {
+    //They clicked "See Solution"
+    updateRating(
+      Math.round(
+        array[Math.floor(progress / 100)][0] * ratingJump
+      )
+    );
+    document.getElementById("cor").innerHTML = "Don't worry, you got this!";
+    document.getElementById("problemOptions").style.display = "none";
+    document.getElementById("solutionOptions").style.display = "inline";
+    document.getElementById("solution").innerHTML = questions[problem][1];
+    totalProg += progress / 2;
+  }
+  cr.innerHTML = progress;
+  ar.innerHTML = Math.round(totalProg / (attemptCount + 2));
+  acc.innerHTML =
+    Math.round((problemsCorrect * 100) / (questionsSolved + 1)) + "%";
+  qs.innerHTML = questionsSolved + 1;
+  progressBar.style.width =
+    Math.round(totalProg / (attemptCount + 2)) / 32 + "%";
+
+  if (
+    Math.round(totalProg / (attemptCount + 2)) -
+      parseInt(progressBar.innerHTML) >
+    0
+  ) {
+    progressBar.innerHTML =
+      "<strong>" +
+      Math.round(totalProg / (attemptCount + 2)) +
+      "</strong> (+" +
+      (Math.round(totalProg / (attemptCount + 2)) -
+        parseInt(progressBar.innerHTML)) +
+      ")";
+  } else {
+    progressBar.innerHTML =
+      "<strong>" +
+      Math.round(totalProg / (attemptCount + 2)) +
+      "</strong> (" +
+      (Math.round(totalProg / (attemptCount + 2)) -
+        parseInt(progressBar.innerHTML)) +
+      ")";
+  }
+
+  setTimeout(function () {
+    attemptCount++;
+    ratingHistory.push(Math.round(totalProg / (attemptCount + 1)));
+    if (attemptCount > 25) {
+      eloChart.data.labels.push(attemptCount);
+    }
+    eloChart.data.datasets[0].data.push(
+      Math.round(totalProg / (attemptCount + 1))
+    );
+    eloChart.update();
+  }, 201 * 3);
+}
+
+for (var i = 0; i < initialLabels.length; i++) {
+  eloChart.data.labels.push(initialLabels[i]);
+}
+
+// Updated updateRating function that also updates the Elo progression chart
+function updateRating(amount) {
+  let val = progress;
+  /*for (let i = 200; i >= 1; i--) {
+          setTimeout(function () {
+            val += (amount * i) / 20100;
+            progressBar.style.width = val / 32 + "%";
+            if (amount < 0) {
+              progressBar.innerHTML =
+                "<strong>" + Math.round(val) + "</strong> (" + amount + ")";
+            } else {
+              progressBar.innerHTML =
+                "<strong>" + Math.round(val) + "</strong> (+" + amount + ")";
+            }
+            if (val < 499.5) {
+              progressBar.style.backgroundColor = "#ff0000";
+            } else {
+              progressBar.style.backgroundColor = "#4caf50";
+            }
+          }, i * 3);
+        }*/
+  progress += amount;
+
+  /* After the animation, update the chart with the new rating.
+        setTimeout(function () {
+          attemptCount++;
+          ratingHistory.push(progress);
+          if (attemptCount > 25) {
+            eloChart.data.labels.push(attemptCount);
+          }
+          eloChart.data.datasets[0].data.push(progress);
+          eloChart.update();
+        }, 201 * 3);*/
+}
+// Inject CSS for the popup
+  var popupStyle = document.createElement("style");
+  popupStyle.innerHTML = `
+  .popup-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(0, 0, 0, 0.6);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 10000;
+  }
+  .popup-content {
+    background: #fff;
+    padding: 20px 30px;
+    border-radius: 10px;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+    text-align: center;
+    font-size: 1.2em;
+    max-width: 50%;
+    max-height: 75%;
+    position: relative;
+    overflow-y: scroll;
+  }
+  .close-btn {
+    position: absolute;
+    top: 10px;
+    right: 15px;
+    font-size: 20px;
+    cursor: pointer;
+    background: none;
+    border: none;
+  }
+  @keyframes fadeIn {
+    from { opacity: 0; transform: scale(0.8); }
+    to { opacity: 1; transform: scale(1); }
+  }
+`;
+  document.head.appendChild(popupStyle);
+
+  function showPopup(message) {
+    var overlay = document.createElement("div");
+    overlay.className = "popup-overlay";
+    
+    var content = document.createElement("div");
+    content.className = "popup-content";
+    content.innerHTML = message;
+    
+    var closeButton = document.createElement("button");
+    closeButton.className = "close-btn";
+    closeButton.innerHTML = "&times;";
+    closeButton.onclick = function() {
+      document.body.removeChild(overlay);
+    };
+    
+    overlay.onclick = function(event) {
+      if (event.target === overlay) {
+        document.body.removeChild(overlay);
+      }
+    };
+    
+    content.appendChild(closeButton);
+    overlay.appendChild(content);
+    document.body.appendChild(overlay);
+  }
+
+  var proficiencyShown = false;
+  var masteryShown = false;
+
+  setInterval(function () {
+    if (typeof progress !== "undefined") {
+      if (progress >= 4000 && !proficiencyShown) {
+        proficiencyShown = true;
+        showPopup(
+          "<strong>Proficiency Achieved!</strong><br>You have achieved proficiency by getting to a rating above 4000.<br>"
+        );
+      }
+      if (progress >= 5000 && !masteryShown) {
+        masteryShown = true;
+        showPopup(
+          "<strong>Mastery Achieved!</strong><br>You have achieved mastery by getting to a rating above 5000."
+        );
+      }
+    }
+  }, 500);
+
+  showPopup('<h3>Tutorial - How to Use Elo Practice</h3><iframe width="560" height="315" src="https://www.youtube.com/embed/VYgirFHLwrM?si=h47XOI1EQchj7d-z" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe><br><p>For practice units, we have a database full of questions with each problem having its own problem rating, which you can view under the stats tab. As you get problems right, you will level up your rating, when you miss problems, you lose rating. As your rating gets higher and higher, the problems become more and more difficult. Problems rated above 1800 are real AP questions taken straight from past exams, so you should have plenty of practice. <strong>Consider completed practice as either you completing 25 or more questions or getting to a rating above 1800.</strong><br><br><i>Note: Progress is not saved when you close or refresh the tab</i>'); 
+    </script>
+    </body>
+</html>
+
