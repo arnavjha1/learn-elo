@@ -1,0 +1,34 @@
+<script>
+    let Rs = 1400;
+    let Rq = [500, 670, 1200, 1100, 1050, 1230, 1560, 1870, 1340];
+
+    for(let i=0; i<Rq.length; i++){
+        alert("Your rating: " + Rs);
+        alert("Question rating: " + Rq[i]);
+
+        let qUpdate = updateElo(Rs, Rq, confirm("Did I get this right?"));
+        Rs = qUpdate[0];
+        Rq[i] = qUpdate[1];
+
+        console.log(Rq);
+    }
+
+    function updateElo(Rs, Rq, correct, K = 32, Kq = 8) {
+        // Step 1: probability student gets it correct
+        const P = 1 / (1 + Math.pow(10, (Rq - Rs) / 400));
+
+        // Step 2: actual result
+        const S = correct ? 1 : 0;
+
+        // Step 3: updates
+        const newRs = Rs + K * (S - P);
+        const newRq = Rq - Kq * (S - P);
+
+        return [newRs, newRq, P]
+        /*return {
+            student: newRs,
+            question: newRq,
+            probability: P
+        };*/
+    }
+</script>
